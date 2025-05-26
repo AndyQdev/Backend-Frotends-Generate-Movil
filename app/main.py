@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.auth.routes import router as auth_router
 from app.routes import proyectos
+from app.routes import ia as ia_router
+
 
 app = FastAPI()
 
@@ -20,5 +22,6 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(proyectos.router)
+app.include_router(ia_router.router)
 from app.sockets.realtime import socket_app  
 app.mount("/ws", socket_app)    
