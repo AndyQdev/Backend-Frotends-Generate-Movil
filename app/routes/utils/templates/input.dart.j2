@@ -1,0 +1,29 @@
+class {{ class_name }} extends StatelessWidget {
+  const {{ class_name }}({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: {{ comp.x }},
+      top:  {{ comp.y }},
+      child: SizedBox(
+        width:  {{ comp.width }},
+        height: {{ comp.height }},
+        child: TextField(
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: const Color(0xFF{{ comp.style.backgroundColor[1:] }}),
+            hintText: '{{ comp.placeholder }}',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular({{ comp.style.borderRadius }}),
+            ),
+          ),
+          style: const TextStyle(
+            fontSize: {{ comp.style.textStyle.fontSize }},
+            color: Color(0xFF{{ comp.style.textStyle.color[1:] }}),
+          ),
+        ),
+      ),
+    );
+  }
+}

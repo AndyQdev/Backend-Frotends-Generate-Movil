@@ -1,0 +1,19 @@
+# Ignorar entorno virtual
+env/
+venv/
+
+# Ignorar caché de Python
+__pycache__/
+*.py[cod]
+
+# Ignorar archivos temporales
+*.log
+*.sqlite3
+*.db
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Metadata de empaquetado
+*.egg-info/

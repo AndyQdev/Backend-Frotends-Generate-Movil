@@ -1,0 +1,177 @@
+
+/// ────────  HEADER  {{ comp.id }}  ────────
+class {{ class_name }} extends StatefulWidget {
+  const {{ class_name }}({ Key? key }) : super(key: key);
+
+  @override
+  State<{{ class_name }}> createState() => _{{ class_name }}State();
+}
+
+class _{{ class_name }}State extends State<{{ class_name }}> {
+  bool _open = false;                               // sidebar visible
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+
+        // ░░ Barra superior ░░
+        Positioned(
+          left: {{ comp.x }},
+          top : {{ comp.y }},
+          child: Container(
+            width : {{ comp.width }},
+            height: {{ comp.height }},
+            color : Colors.white,
+            alignment: Alignment.center,
+            child: Row(
+              children: [
+                // botón hamburguesa
+                IconButton(
+                  icon: Icon(
+                    _open ? Icons.close : Icons.menu,
+                    color: const Color(0xFF{{ comp.color[1:] }}),
+                  ),
+                  onPressed: () => setState(() => _open = !_open),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      '{{ comp.title }}',
+                      style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 48),           // placeholder dcha.
+              ],
+            ),
+          ),
+        ),
+        // ░░ Overlay ░░
+        if (_open)
+          GestureDetector(
+            onTap: () => setState(() => _open = false),
+            child: Container(color: Colors.black.withOpacity(.30)),
+          ),
+
+        // ░░ Sidebar animado ░░
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          left: _open ? 0 : -{{ comp.sidebar.width }},
+          top : 35,
+          bottom : 0,
+          child: _Sidebar{{ comp.id }}(
+            select: {{ comp.sidebar.select or 0 }},
+          ),
+        ),
+      ],
+    );
+  }
+}
+{% set main   = comp.sidebar.mainColor[1:] %}
+{% set aside  = comp.sidebar.asideBg[1:]   %}
+{% set width  = comp.sidebar.width        %}
+{% set icon   = comp.sidebar.titleIcon or 'star' %}
+
+/// ──────── SIDEBAR embebido ────────
+class _Sidebar{{ comp.id }} extends StatelessWidget {
+  const _Sidebar{{ comp.id }}({ super.key, required this.select });
+
+  final int select;
+
+  //-- Map simple icono-FontAwesome → Material
+  static const _icons = {
+    'home'  : Icons.home,
+    'file'  : Icons.insert_drive_file_outlined,
+    'cog'   : Icons.settings,
+    'star'  : Icons.star,
+    'folder': Icons.folder,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width : {{ width }},
+      color : const Color(0xFF{{ aside }}),
+      child : Column(
+        children: [
+
+          /* ╭─ Header interno ───────────────────╮ */
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(_icons['{{ icon }}'] ?? Icons.star,
+                     color: const Color(0xFF{{ main }}), size: 22),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '{{ comp.sidebar.title }}',
+                    style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  onPressed: Navigator.of(context).maybePop,
+                  icon: const Icon(Icons.close, size: 20),
+                  color: const Color(0xFF{{ main }}),
+                  splashRadius: 20,
+                  tooltip: 'Cerrar',
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+
+          /* ╭─ Secciones ────────────────────────╮ */
+          Expanded(
+            child: ListView(
+              children: [
+                {% for sec in comp.sidebar.sections %}
+                ListTile(
+                  leading: Icon(
+                    _icons['{{ sec.icon }}'] ?? Icons.circle,
+                    size: 22,
+                    color: select == {{ loop.index0 }}
+                           ? const Color(0xFF{{ main }})
+                           : null,
+                  ),
+                  title: Text('{{ sec.label }}'),
+                  selected: select == {{ loop.index0 }},
+                  selectedColor: const Color(0xFF{{ main }}),
+                  selectedTileColor: const Color(0x33{{ main }}), // 20 % opacidad
+                  onTap: () => Navigator.pushNamed(
+                              context, '/page-{{ sec.route }}'),
+                ),
+                {% endfor %}
+              ],
+            ),
+          ),
+
+          /* ╰─ Footer ───────────────────────────╯ */
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF{{ main }}),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: () {},
+                icon : const Icon(Icons.settings, size: 18),
+                label: const Text('Configuración'),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

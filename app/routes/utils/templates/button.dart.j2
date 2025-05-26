@@ -1,0 +1,38 @@
+Positioned( 
+  left: {{ comp.x }},
+  top:  {{ comp.y }},
+  child: SizedBox(
+    width: {{ comp.width }},
+    height: {{ comp.height }},
+    child: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF{{ comp.style.backgroundColor[1:] }}),
+        padding: const EdgeInsets.fromLTRB(
+          {{ comp.style.padding.left }},
+          {{ comp.style.padding.top }},
+          {{ comp.style.padding.right }},
+          {{ comp.style.padding.bottom }}
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular({{ comp.style.borderRadius }}),
+        ),
+      ),
+      onPressed: () {
+        {% if comp.route %}
+        Navigator.pushNamed(context, '/page-{{ comp.route }}');
+        {% else %}
+        // Sin ruta definida
+        },
+        {% endif %}
+      },
+      child: const Text(
+        '{{ comp.label }}',
+        style: TextStyle(
+          fontSize: {{ comp.style.textStyle.fontSize }},
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF{{ comp.style.textStyle.color[1:] }}),
+        ),
+      ),
+    ),
+  ),
+)

@@ -1,0 +1,18 @@
+import 'package:flutter/material.dart';
+{{ widgets|join('\n') }}
+
+class {{ class_name }} extends StatelessWidget {
+  const {{ class_name }}({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF{{ bg_color }}),
+      body: Stack(children: const [
+        {% for w in widgets %}
+          {{ w }}
+        {% endfor %}
+      ]),
+    );
+  }
+}
