@@ -1,7 +1,7 @@
 # app/schemas/components.py
 from typing import Literal, Annotated, Union, Optional
 from uuid import uuid4
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, TypeAdapter
 
 # ───────── utilidades comunes ──────────
 class Padding(BaseModel):
@@ -51,4 +51,22 @@ class SelectComponent(ComponentBase):
 ComponentJSON = Annotated[
     Union[ButtonComponent, InputComponent, SelectComponent],
     Field(discriminator='type')
+]
+
+class Target(BaseModel):
+    by: Literal['id', 'label', 'color']
+    value: str
+
+class UpdatePatch(BaseModel):
+    action: Literal['update']
+    target: Target
+    changes: dict
+
+class CreateAction(BaseModel):
+    action: Literal['create']
+    component: ComponentJSON
+
+ActionJSON = Annotated[
+    Union[CreateAction, UpdatePatch],
+    Field(discriminator='action')
 ]
