@@ -1,0 +1,42 @@
+{# bottom_navigation_bar.dart.j2 #}
+class {{ class_name }} extends StatefulWidget {
+  const {{ class_name }}({super.key});
+
+  @override
+  State<{{ class_name }}> createState() => _{{ class_name }}State();
+}
+
+
+class _{{ class_name }}State extends State<{{ class_name }}> {
+  int _current = {{ comp.get("initialIndex", 0) }};
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular({{ comp.get("borderRadius", 0) }}.0),
+      child: BottomNavigationBar(
+      currentIndex: _current,
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: const Color(0xFF{{ comp.get("activeColor", "2563eb")[1:] }}),
+      unselectedItemColor: const Color(0xFF{{ comp.get("inactiveColor", "2563eb")[1:] }}),
+      backgroundColor: const Color(0xFF{{ comp.get("backgroundColor", "2563eb")[1:] }}),
+      onTap: (i) {
+        setState(() => _current = i);
+        {%- for it in comp.get("items", []) %}
+        if (i == {{ loop.index0 }} && '{{ it.route }}'.isNotEmpty) {
+          Navigator.pushNamed(context, '/page-{{ it.route }}');
+        }
+        {%- endfor %}
+      },
+      items: [
+        {%- for it in comp.get("items", []) %}
+        BottomNavigationBarItem(
+          icon: Icon(Icons.{{ it.icon|default("home") }}),
+          label: '{{ it.label|default("Item") }}',
+        ),
+        {%- endfor %}
+      ],
+      ),
+    );
+  }
+}

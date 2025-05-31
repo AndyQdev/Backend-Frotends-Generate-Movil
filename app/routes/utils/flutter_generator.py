@@ -28,12 +28,15 @@ def render_page(page: dict) -> str:
     class_defs = "\n\n".join(p["class_def"] for p in parts if p["class_def"])
     calls      = ",\n          ".join(p["call"]      for p in parts if p["call"])
 
+    bottom_call = next((p["bottom"] for p in parts if "bottom" in p), None)
+
     tpl = env.get_template("page.dart.j2")
     return tpl.render(
         class_name = f"Page{page['id']}",
         bg_color   = page["background_color"][1:],   # sin #
         class_defs = class_defs,
         calls      = calls,
+        bottom_call = bottom_call,
     )
 
 def render_component(comp: dict) -> dict:
@@ -57,6 +60,17 @@ def render_component(comp: dict) -> dict:
             comp=comp, class_name=class_name
         )
         return {'class_def': class_def, 'call': f'{class_name}()'}
+
+    # ----- NUEVO branch dentro de render_component -------------------
+    if t == 'bottomNavigationBar':
+        class_name = f"BottomNav{comp['id']}"
+        class_def  = env.get_template('bottom_navigation_bar.dart.j2').render(
+            comp=comp, class_name=class_name
+        )
+        return {'class_def': class_def,
+            'call'     : '',               # no va en el body/Stack
+            'bottom'   : f'{class_name}()' # se usará en bottomNavigationBar
+    }
 
     # otros tipos…
     return {'class_def': '', 'call': ''}
