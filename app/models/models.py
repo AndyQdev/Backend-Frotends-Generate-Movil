@@ -27,6 +27,8 @@ class Proyecto(Base):
     name = Column(String, nullable=False)
     descripcion = Column(String, nullable=True)  # ✅ AGREGA ESTA LÍNEA
     status = Column(String, nullable=True)  # ✅ AGREGA ESTA LÍNEA
+    resolution_w = Column(Integer, default=390)
+    resolution_h = Column(Integer, default=844)
     last_modified = Column(
         DateTime,
         default=datetime.utcnow,           # al crear

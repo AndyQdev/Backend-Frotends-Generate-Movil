@@ -8,9 +8,9 @@ from pydantic import ValidationError
 from pydantic import TypeAdapter
 load_dotenv()
 
-print("✅ KEY LEÍDA:", repr(os.getenv("OPENROUTER_API_KEY")))
+print("✅ KEY LEÍDA DE OPENROUTER:", repr(os.getenv("OPENROUTER_API_KEY")))
 client = OpenAI(
-    api_key="",
+    api_key= os.getenv("OPENROUTER_API_KEY"),
     base_url="https://openrouter.ai/api/v1"
 )
 # client = OpenAI(
@@ -26,9 +26,14 @@ SYSTEM_PROMPT = """
 Eres un generador de componentes JSON para un UI Builder.
 Devuelve **solo** un objeto JSON y nada más.
 
+⚠️ IMPORTANTE:
+- Los campos "x", "y", "width" y "height" son porcentajes (no píxeles).
+- Sus valores deben estar entre 0 y 100.
+- NO deben exceder 100 bajo ninguna circunstancia.
+
 Ejemplo 1 (button):
 {
- "type":"button","label":"Aceptar","x":40,"y":500,"width":300,"height":60,
+ "type":"button","label":"Aceptar","x":10,"y":70,"width":80,"height":8,
  "style":{"backgroundColor":"#2563eb","borderRadius":8,
           "textStyle":{"fontSize":20,"fontWeight":"bold","color":"#ffffff"}}
 }
@@ -36,13 +41,13 @@ Ejemplo 1 (button):
 Ejemplo 2 (input):
 {
  "type":"input","placeholder":"Email","inputType":"email",
- "x":40,"y":300,"width":340,"height":48
+ "x":10,"y":50,"width":80,"height":6
 }
 
 Ejemplo 3 (select):
 {
  "type":"select","options":["Perú","Bolivia","Chile"],
- "x":40,"y":380,"width":340,"height":48
+ "x":10,"y":60,"width":80,"height":6
 }
 
 Si el usuario quiere MODIFICAR un componente existente:
@@ -51,14 +56,37 @@ Si el usuario quiere MODIFICAR un componente existente:
   "changes": { "style": { "backgroundColor":"#ff0000" } }
 
 Si el usuario quiere AGREGAR algo nuevo:
-- Devuelve { "action":"create", "component": { ...estructura completa... } }
+- Devuelve un objeto con "action":"create" y "components": [ ...lista de componentes... ]
 
-IMPORTANTE:
+REGLAS:
+- SIEMPRE usa "components": [ ... ] incluso si hay UN solo componente.
+- NO uses "component" en singular.
 - El objeto target DEBE tener SIEMPRE las claves "by" y "value".
 - Ejemplo correcto para buscar por id:
   "target": { "by":"id", "value":"633956234655844404" }
-NO devuelvas nada más que el JSON.
-"""  # ← pocos-shhots ayudan a que respete la unión discriminada
+
+NO devuelvas nada más que el JSON. No agregues explicaciones ni comentarios.
+
+Ejemplo final (varios):
+{
+ "action":"create",
+ "components":[
+   {
+     "type":"button",
+     "label":"Enviar",
+     "x":10,"y":80,"width":80,"height":8,
+     "style":{"backgroundColor":"#2563eb","borderRadius":8,
+              "textStyle":{"fontSize":20,"fontWeight":"bold","color":"#ffffff"}}
+   },
+   {
+     "type":"input",
+     "placeholder":"Email",
+     "inputType":"email",
+     "x":10,"y":60,"width":80,"height":6
+   }
+ ]
+}
+"""
 
 
 def generate_component(prompt: str) -> ComponentJSON:

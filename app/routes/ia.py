@@ -57,10 +57,24 @@ def ia_component(body: IARequest, db: Session = Depends(get_db), _u = Depends(ge
     action = generate_action(body.prompt, comps)
 
     if action.action == 'create':
-        comp_dict = action.component.model_dump(mode='json')
-        page.components = comps + [comp_dict]
+        # unificar: convertir a lista siempre
+        comps_nuevos = (
+            [action.component]                # <- si vino CreateSingle
+            if hasattr(action, "component")
+            else action.components            # <- CreateAction
+        )
+
+        new_dicts = [c.model_dump(mode="json") for c in comps_nuevos]
+        page.components = (comps or []) + new_dicts
+
+        flag_modified(page, "components")
         db.commit(); db.refresh(page)
-        return {"action":"create", "component": comp_dict, "page": page}
+
+        return {
+            "action": "create",
+            "components": new_dicts,          # lista
+            "page": page
+        }
 
     elif action.action == 'update':
         # encontrar componente

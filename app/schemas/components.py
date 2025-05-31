@@ -64,8 +64,12 @@ class UpdatePatch(BaseModel):
 
 class CreateAction(BaseModel):
     action: Literal['create']
+    components: list[ComponentJSON]
+     
+# Si quieres compatibilidad con el viejo formato, añade:
+class CreateSingle(BaseModel):
+    action: Literal['create']
     component: ComponentJSON
-
 ActionJSON = Annotated[
     Union[CreateAction, UpdatePatch],
     Field(discriminator='action')

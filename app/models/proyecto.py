@@ -8,6 +8,8 @@ class Proyecto(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    resolution_w = Column(Integer, default=390)
+    resolution_h = Column(Integer, default=844)
     descripcion = Column(String, nullable=True)
     status = Column(String, nullable=True)
     create_date = Column(DateTime, default=datetime.utcnow)
