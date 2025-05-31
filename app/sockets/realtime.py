@@ -4,6 +4,11 @@ from fastapi import FastAPI
 from app.auth.auth_utils import decode_token    # usarás decode_token
 from app.models.models import Usuario, Proyecto, ColaboradorProyecto
 from app.database import SessionLocal
+from typing import Dict
+
+# project_users: { project_id: { sid: user_info } }
+project_users: Dict[int, Dict[str, dict]] = {}
+
 
 
 async def get_user_from_token(token: str) -> Usuario:
@@ -172,3 +177,63 @@ async def component_props_changed(sid, data):
     # rebota al resto, no persiste en BD
     print("props_changed", data) 
     await _relay(sid, "component_props_changed", data)
+
+@sio.event
+async def connect(sid, environ, auth):
+    try:
+        user = await get_user_from_token(auth["token"])
+    except Exception:
+        return False   # Rechazar conexión si token inválido
+
+    project_id = int(auth["project_id"])
+
+    if not await user_can_access_project(user, project_id):
+        return False   # Rechazar conexión si no tiene acceso
+
+    await sio.save_session(sid, {"user_id": user.id, "project_id": project_id})
+
+    await sio.enter_room(sid, f"project_{project_id}")
+
+    # Guardar usuario en la lista global
+    if project_id not in project_users:
+        project_users[project_id] = {}
+    project_users[project_id][sid] = {
+        "id": user.id,
+        "name": user.name,  # Ajusta el campo con el nombre real que uses
+        # puedes añadir más datos como avatar, email, etc.
+    }
+
+    # Emitir lista actualizada a todos en la sala
+    users_list = list(project_users[project_id].values())
+    await sio.emit("usersInProject", users_list, room=f"project_{project_id}")
+
+    # Envía snapshot inicial si quieres
+    await sio.emit("initial_state", {"message": "snapshot inicial"}, room=sid)
+
+
+@sio.event
+async def disconnect(sid):
+    sess = await sio.get_session(sid)
+    if not sess:
+        return
+    project_id = sess.get("project_id")
+    if project_id is None:
+        return
+
+    # Quitar usuario de la lista
+    if project_id in project_users and sid in project_users[project_id]:
+        del project_users[project_id][sid]
+
+        # Emitir lista actualizada a todos en la sala
+        users_list = list(project_users[project_id].values())
+        await sio.emit("usersInProject", users_list, room=f"project_{project_id}")
+
+    await sio.leave_room(sid, f"project_{project_id}")
+
+@sio.event
+async def leaveProject(sid, project_id: int):
+    if project_id in project_users and sid in project_users[project_id]:
+        del project_users[project_id][sid]
+        users_list = list(project_users[project_id].values())
+        await sio.emit("usersInProject", users_list, room=f"project_{project_id}")
+    await sio.leave_room(sid, f"project_{project_id}")

@@ -3,25 +3,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.auth.routes import router as auth_router
 from app.routes import proyectos
 from app.routes import ia as ia_router
-
+from app.sockets.realtime import sio  # Traer el mismo sio
+from socketio import ASGIApp
 
 app = FastAPI()
 
-origins = [
-    "http://localhost:5173",  # Frontend local
-    # "https://tu-dominio.com",  # Producción si aplica
-]
-# Permitir peticiones del frontend
+origins = ["http://localhost:5173"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # dominios permitidos
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],  # permite todos los métodos (GET, POST, etc)
-    allow_headers=["*"],  # permite todos los headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(auth_router)
 app.include_router(proyectos.router)
 app.include_router(ia_router.router)
-from app.sockets.realtime import socket_app  
-app.mount("/ws", socket_app)    
+
+socket_app = ASGIApp(sio, other_asgi_app=app)  # aquí sí creamos socket_app global
