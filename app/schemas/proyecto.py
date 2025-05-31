@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional, Literal
 from datetime import datetime
+from fastapi import UploadFile, File
 
 class ComponentCreate(BaseModel):
     type: str
@@ -60,6 +61,8 @@ class Proyecto(BaseModel):
     status: Optional[str] = "En proceso"
     create_date: datetime
     pages: List[Page] = []
+    resolution_w: int | None = None
+    resolution_h: int | None = None
     last_modified: datetime
     class Config:
         from_attributes = True
@@ -101,6 +104,7 @@ class PageCreateIn(BaseModel):
     grid_enabled: bool          = False
     device_mode: Literal["desktop", "tablet", "mobile"] = "desktop"
     components: List[dict]      = []
+    img: UploadFile | None = File(None)
 
 class PageResponse(BaseModel):
     data: Page   # reutilizamos el Page que ya tienes
