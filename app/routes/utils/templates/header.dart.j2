@@ -12,16 +12,18 @@ class _{{ class_name }}State extends State<{{ class_name }}> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     return Stack(
       children: [
 
         // ░░ Barra superior ░░
         Positioned(
-          left: {{ comp.x }},
-          top : {{ comp.y }},
+          left: screenWidth * {{ comp.x }} / 100,
+          top: screenHeight * {{ comp.y }} / 100,
           child: Container(
-            width : {{ comp.width }},
-            height: {{ comp.height }},
+            width: screenWidth * {{ comp.width }} / 100,
+            height: screenHeight * {{ comp.height }} / 100,
             color : Colors.white,
             alignment: Alignment.center,
             child: Row(
@@ -59,7 +61,7 @@ class _{{ class_name }}State extends State<{{ class_name }}> {
         AnimatedPositioned(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
-          left: _open ? 0 : -{{ comp.sidebar.width }},
+          left: _open ? 0 : -80 * screenWidth / 100,
           top : 35,
           bottom : 0,
           child: _Sidebar{{ comp.id }}(
@@ -92,8 +94,9 @@ class _Sidebar{{ comp.id }} extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     return Container(
-      width : {{ width }},
+      width : screenWidth * 80 / 100,
       color : const Color(0xFF{{ aside }}),
       child : Column(
         children: [

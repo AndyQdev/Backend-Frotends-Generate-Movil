@@ -1,9 +1,9 @@
-Positioned( 
-  left: {{ comp.x }},
-  top:  {{ comp.y }},
+Positioned(
+  left: screenWidth * {{ comp.x }} / 100,
+  top: screenHeight * {{ comp.y }} / 100,
   child: SizedBox(
-    width: {{ comp.width }},
-    height: {{ comp.height }},
+    width: screenWidth * {{ comp.width }} / 100,
+    height: screenHeight * {{ comp.height }} / 100,
     child: ElevatedButton(
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF{{ comp.style.backgroundColor[1:] }}),
@@ -22,7 +22,6 @@ Positioned(
         Navigator.pushNamed(context, '/page-{{ comp.route }}');
         {% else %}
         // Sin ruta definida
-        },
         {% endif %}
       },
       child: const Text(

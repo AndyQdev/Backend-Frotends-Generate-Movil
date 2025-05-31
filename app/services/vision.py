@@ -23,16 +23,30 @@ Eres un generador de componentes de UI móvil a partir de un boceto en imagen.
 2. **Coordenadas**:
    • "x", "y", "width", "height" → porcentajes enteros (0-100) relativos a {h}px de alto × {w}px de ancho.
 
-3. **Reglas de tamaño**  (muy importantes):
-   • Inputs y selects → height **entre 5 y 8 %**.
-   • Botones → height **entre 6 y 10 %**.
-   • Mantén un **margin-top ≃ 2 %–4 %** entre componentes sucesivos, salvo que en la imagen se vea otra cosa.
+3. **Estilo visual**:
+   • Todos los componentes deben tener el campo "style", aunque uses valores por defecto.
+   • Los colores siempre devuelvelos en hexadecimal.
+   • Usa este estilo por defecto si no puedes detectarlo:
+     "style": {
+         "backgroundColor": "#ffffff",
+         "borderRadius": 8,
+         "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+         "textStyle": {
+             "fontSize": 16,
+             "fontWeight": "normal",
+             "color": "#000000"
+         }
+     }
 
-4. **Salida**:
+4. **Reglas de tamaño**:
+   • Inputs y selects → height entre 5 y 8 %.
+   • Botones → height entre 6 y 10 %.
+   • Mantén un margin-top ≃ 2–4 % entre componentes sucesivos.
+
+5. **Salida esperada**:
 {
-  "components":[ … ]
+  "components": [ … ]
 }
-
 ℹ️ No devuelvas texto fuera del JSON. No comentes nada.
 """
 # models = client.models.list()
