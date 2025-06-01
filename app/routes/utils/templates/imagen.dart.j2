@@ -1,0 +1,25 @@
+class {{ class_name }} extends StatelessWidget {
+  const {{ class_name }}({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Positioned(
+      left: screenWidth * {{ comp.x }} / 100,
+      top: screenHeight * {{ comp.y }} / 100,
+      child: SizedBox(
+        width: screenWidth * {{ comp.width }} / 100,
+        height: screenHeight * {{ comp.height }} / 100,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular({{ comp.style.borderRadius }}),
+          child: Image.network(
+            '{{ comp.src }}',
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+    );
+  }
+}

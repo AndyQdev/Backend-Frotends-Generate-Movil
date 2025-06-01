@@ -1,0 +1,12 @@
+Positioned(
+  left: screenWidth * {{ comp.x }} / 100,
+  top: screenHeight * {{ comp.y }} / 100,
+  child: Text(
+    '{{ comp.text }}',
+    style: const TextStyle(
+      fontSize: {{ comp.style.textStyle.fontSize }},
+      fontWeight: FontWeight.w500,
+      color: Color(0xFF{{ comp.style.textStyle.color[1:] }}),
+    ),
+  ),
+)

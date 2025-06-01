@@ -5,6 +5,7 @@ import os, json, re
 from openai import OpenAI
 from dotenv import load_dotenv
 from pydantic import ValidationError
+import random
 from pydantic import TypeAdapter
 load_dotenv()
 
@@ -50,6 +51,99 @@ Ejemplo 3 (select):
  "x":10,"y":60,"width":80,"height":6
 }
 
+Ejemplo 4 (checklist):
+{
+ "type":"checklist","label":"Selecciona tus gustos",
+ "options":["Café","Té","Jugo"],
+ "x":10,"y":40,"width":80,"height":15
+}
+
+Ejemplo 5 (radiobutton):
+{
+ "type":"radiobutton","label":"Género",
+ "options":["Masculino","Femenino"], "selectedOption":"Masculino",
+ "x":10,"y":60,"width":80,"height":10
+}
+
+Ejemplo 6 (card):
+{
+ "type":"card","title":"Resumen","content":"Este es el contenido",
+ "x":5,"y":20,"width":90,"height":20,
+ "style":{"backgroundColor":"#f8fafc","borderRadius":12}
+}
+
+Ejemplo 7 (label):
+{
+ "type":"label","text":"Este es un texto estático",
+ "x":10,"y":30,"width":80,"height":4,
+ "style":{"textStyle":{"fontSize":16,"color":"#111827"}}
+}
+
+Ejemplo 8 (calendar):
+{
+  "type": "calendar",
+  "selectedDate": "2025-06-01",
+  "x": 10,
+  "y": 30,
+  "width": 80,
+  "height": 12,
+  "style": {
+    "backgroundColor": "#ffffff",
+    "borderRadius": 8
+  }
+}
+
+Ejemplo 9 (search):
+{
+  "type": "search",
+  "placeholder": "Buscar producto...",
+  "value": "",
+  "x": 10,
+  "y": 20,
+  "width": 80,
+  "height": 6,
+  "style": {
+    "backgroundColor": "#f1f5f9",
+    "borderRadius": 6,
+    "textStyle": {
+      "fontSize": 14,
+      "color": "#111827"
+    }
+  }
+}
+
+Ejemplo 10 (textArea):
+{
+  "type": "textArea",
+  "placeholder": "Escribe tu mensaje",
+  "value": "",
+  "x": 10,
+  "y": 40,
+  "width": 80,
+  "height": 14,
+  "style": {
+    "backgroundColor": "#ffffff",
+    "borderRadius": 8,
+    "textStyle": {
+      "fontSize": 16,
+      "color": "#111827"
+    }
+  }
+}
+
+Ejemplo 11 (imagen):
+{
+  "type": "imagen",
+  "src": "https://example.com/logo.png",
+  "x": 10,
+  "y": 10,
+  "width": 60,
+  "height": 20,
+  "style": {
+    "borderRadius": 6
+  }
+}
+
 Si el usuario quiere MODIFICAR un componente existente:
 - Devuelve un objeto JSON con "action":"update",
   "target": { "by":"color", "value":"#ffff00" },  // ejemplo
@@ -88,7 +182,47 @@ Ejemplo final (varios):
 }
 """
 
+DEFAULT_IMAGES = [
+    "https://wallpapers.com/images/high/cool-neon-green-profile-picture-uvhf8r1q7ekwuzwu.webp",
+    "https://wallpapers.com/images/featured-full/imagenes-de-perfil-geniales-4co57dtwk64fb7lv.jpg",
+    "https://wallpapers.com/images/high/cool-profile-picture-purple-astronaut-mm73otj7x18b5r7m.webp"
+]
 
+def ensure_defaults(component: dict) -> dict:
+    if component.get("type") == "imagen":
+        src = component.get("src", "")
+        if not src or "example.com" in src:
+            component["src"] = random.choice(DEFAULT_IMAGES)
+    return component
+
+def default_style():
+    return {
+        "backgroundColor": "#ffffff",
+        "borderRadius": 0,
+        "padding": {"top": 0, "right": 0, "bottom": 0, "left": 0},
+        "textStyle": {"fontSize": 14, "fontWeight": "normal", "color": "#000000"}
+    }
+
+def ensure_style(component: dict) -> dict:
+    if component.get("style") is None:
+        component["style"] = default_style()
+    else:
+        component["style"] = {
+            "backgroundColor": component["style"].get("backgroundColor", "#ffffff"),
+            "borderRadius": component["style"].get("borderRadius", 0),
+            "padding": {
+                "top": component["style"].get("padding", {}).get("top", 0),
+                "right": component["style"].get("padding", {}).get("right", 0),
+                "bottom": component["style"].get("padding", {}).get("bottom", 0),
+                "left": component["style"].get("padding", {}).get("left", 0),
+            },
+            "textStyle": {
+                "fontSize": component["style"].get("textStyle", {}).get("fontSize", 14),
+                "fontWeight": component["style"].get("textStyle", {}).get("fontWeight", "normal"),
+                "color": component["style"].get("textStyle", {}).get("color", "#000000")
+            }
+        }
+    return component
 def generate_component(prompt: str) -> ComponentJSON:
     """Llama a GPT-4 Turbo y valida con ComponentJSON (union)."""
     resp = client.chat.completions.create(
@@ -108,7 +242,8 @@ def generate_component(prompt: str) -> ComponentJSON:
 
     data = json.loads(raw)
     data.setdefault("id", str(uuid4().int >> 64))
-
+    data = ensure_defaults(data) 
+    data = ensure_style(data)
     try:
         adapter = TypeAdapter(ComponentJSON)
         return adapter.validate_python(data)   # 🔥 validación unificada
@@ -130,6 +265,9 @@ def generate_action(prompt: str, components: list[dict]) -> ActionJSON:
     if raw.startswith("```"):
         raw = raw.split("```")[-1].strip()
     data = json.loads(raw)
-
+    if data.get("action") == "create" and "components" in data:
+        for i, comp in enumerate(data["components"]):
+            comp = ensure_defaults(comp)
+            data["components"][i] = ensure_style(comp)
     adapter = TypeAdapter(ActionJSON)
     return adapter.validate_python(data)

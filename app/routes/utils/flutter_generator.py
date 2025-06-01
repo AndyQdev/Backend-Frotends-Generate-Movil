@@ -61,7 +61,6 @@ def render_component(comp: dict) -> dict:
         )
         return {'class_def': class_def, 'call': f'{class_name}()'}
 
-    # ----- NUEVO branch dentro de render_component -------------------
     if t == 'bottomNavigationBar':
         class_name = f"BottomNav{comp['id']}"
         class_def  = env.get_template('bottom_navigation_bar.dart.j2').render(
@@ -71,8 +70,48 @@ def render_component(comp: dict) -> dict:
             'call'     : '',               # no va en el body/Stack
             'bottom'   : f'{class_name}()' # se usará en bottomNavigationBar
     }
+    if t == 'select':
+        class_name = f"Select{comp['id']}"
+        class_def  = env.get_template('select.dart.j2').render(
+            comp=comp, class_name=class_name
+        )
+        return {'class_def': class_def, 'call': f'{class_name}()'}
+    
+    if t == 'checklist':
+        call = env.get_template('checklist.dart.j2').render(comp=comp)
+        return {'class_def': '', 'call': call}
 
-    # otros tipos…
+    if t == 'radiobutton':
+        call = env.get_template('radiobutton.dart.j2').render(comp=comp)
+        return {'class_def': '', 'call': call}
+
+    if t == 'card':
+        call = env.get_template('card.dart.j2').render(comp=comp)
+        return {'class_def': '', 'call': call}
+
+    if t == 'label':
+        call = env.get_template('label.dart.j2').render(comp=comp)
+        return {'class_def': '', 'call': call}
+    if t == 'textArea':
+        class_name = f"TextArea{comp['id']}"
+        class_def = env.get_template('text_area.dart.j2').render(comp=comp, class_name=class_name)
+        return {'class_def': class_def, 'call': f'{class_name}()'}
+
+    if t == 'imagen':
+        class_name = f"Imagen{comp['id']}"
+        class_def = env.get_template('imagen.dart.j2').render(comp=comp, class_name=class_name)
+        return {'class_def': class_def, 'call': f'{class_name}()'}
+
+    if t == 'calendar':
+        class_name = f"Calendar{comp['id']}"
+        class_def = env.get_template('calendar.dart.j2').render(comp=comp, class_name=class_name)
+        return {'class_def': class_def, 'call': f'{class_name}()'}
+
+    if t == 'search':
+        class_name = f"Search{comp['id']}"
+        class_def = env.get_template('search.dart.j2').render(comp=comp, class_name=class_name)
+        return {'class_def': class_def, 'call': f'{class_name}()'}
+    
     return {'class_def': '', 'call': ''}
 
 # ---------- genera todos los files ----------

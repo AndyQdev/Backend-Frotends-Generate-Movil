@@ -1,0 +1,22 @@
+Positioned(
+  left: screenWidth * {{ comp.x }} / 100,
+  top: screenHeight * {{ comp.y }} / 100,
+  child: Container(
+    width: screenWidth * {{ comp.width }} / 100,
+    height: screenHeight * {{ comp.height }} / 100,
+    padding: const EdgeInsets.all(8),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        {% for opt in comp.options %}
+        Row(
+          children: [
+            Radio(value: '{{ opt }}', groupValue: '{{ comp.selectedOption }}', onChanged: (_) {}),
+            Text('{{ opt }}')
+          ],
+        ),
+        {% endfor %}
+      ],
+    ),
+  ),
+)
