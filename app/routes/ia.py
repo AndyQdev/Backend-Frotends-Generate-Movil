@@ -107,6 +107,6 @@ def ia_component(body: IARequest, db: Session = Depends(get_db), _u = Depends(ge
         db.refresh(page)
         return {
             "action": "update",
-            "component": target,
+            "components": target,
             "page": page
         }

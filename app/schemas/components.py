@@ -46,10 +46,60 @@ class SelectComponent(ComponentBase):
     type: Literal['select']
     options: list[str]
 
+class CheckListComponent(ComponentBase):
+    type: Literal['checklist']
+    label: Optional[str] = None
+    options: list[str]
+    selectedOptions: Optional[list[str]] = []
+
+class RadioButtonComponent(ComponentBase):
+    type: Literal['radiobutton']
+    label: Optional[str] = None
+    options: list[str]
+    selectedOption: Optional[str] = ""
+
+class CardComponent(ComponentBase):
+    type: Literal['card']
+    title: str
+    content: str
+
+class LabelComponent(ComponentBase):
+    type: Literal['label']
+    text: str
+
+class CalendarComponent(ComponentBase):
+    type: Literal['calendar']
+    selectedDate: Optional[str] = None  # formato YYYY-MM-DD
+
+class SearchComponent(ComponentBase):
+    type: Literal['search']
+    placeholder: str
+    value: Optional[str] = None
+
+class TextAreaComponent(ComponentBase):
+    type: Literal['textArea']
+    placeholder: Optional[str] = None
+    value: Optional[str] = None
+
+class ImagenComponent(ComponentBase):
+    type: Literal['imagen']
+    src: str  # URL o base64
 # ───────── unión discriminada ─────────
 # ➊ Con Pydantic v2 usamos el discriminador
 ComponentJSON = Annotated[
-    Union[ButtonComponent, InputComponent, SelectComponent],
+    Union[
+        ButtonComponent,
+        InputComponent,
+        SelectComponent,
+        CheckListComponent,
+        RadioButtonComponent,
+        CardComponent,
+        LabelComponent,
+        CalendarComponent,   
+        SearchComponent,     
+        TextAreaComponent,   
+        ImagenComponent 
+    ],
     Field(discriminator='type')
 ]
 

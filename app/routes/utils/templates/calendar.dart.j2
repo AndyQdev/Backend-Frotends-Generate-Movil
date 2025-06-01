@@ -1,0 +1,75 @@
+{# ---------- helpers para no repetir condiciones ---------- #}
+{% set bg_color   = (comp.style.backgroundColor[1:] if comp.style and comp.style.backgroundColor else 'ffffff') %}
+{% set radius     = (comp.style.borderRadius        if comp.style and comp.style.borderRadius    is not none else 6) %}
+{% set font_size  = (comp.style.textStyle.fontSize  if comp.style and comp.style.textStyle and comp.style.textStyle.fontSize  is not none else 14) %}
+{% set text_color = (comp.style.textStyle.color[1:] if comp.style and comp.style.textStyle and comp.style.textStyle.color     else '111827') %}
+
+class {{ class_name }} extends StatefulWidget {
+  const {{ class_name }}({Key? key}) : super(key: key);
+
+  @override
+  State<{{ class_name }}> createState() => _{{ class_name }}State();
+}
+
+class _{{ class_name }}State extends State<{{ class_name }}> {
+  DateTime? selectedDate;
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedDate = DateTime.tryParse('{{ comp.selectedDate or '' }}');
+    _controller = TextEditingController(
+      text: selectedDate != null
+          ? "${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}"
+          : '',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth  = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Positioned(
+      left:  screenWidth  * {{ comp.x }} / 100,
+      top:   screenHeight * {{ comp.y }} / 100,
+      child: SizedBox(
+        width:  screenWidth  * {{ comp.width  }} / 100,
+        height: screenHeight * {{ comp.height }} / 100,
+        child: TextField(
+          controller: _controller,
+          readOnly: true,
+          decoration: InputDecoration(
+            hintText: 'Selecciona una fecha',
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular({{ radius }}),
+            ),
+            filled: true,
+            fillColor: const Color(0xFF{{ bg_color }}),
+          ),
+          style: TextStyle(
+            fontSize: {{ font_size }},
+            color: const Color(0xFF{{ text_color }}),
+          ),
+          onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: selectedDate ?? DateTime.now(),
+              firstDate:  DateTime(2000),
+              lastDate:   DateTime(2100),
+            );
+            if (picked != null) {
+              setState(() {
+                selectedDate = picked;
+                _controller.text =
+                    "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+              });
+            }
+          },
+        ),
+      ),
+    );
+  }
+}
