@@ -13,7 +13,8 @@ from app.models.models import ColaboradorProyecto
 from sqlalchemy import desc
 from app.schemas.proyecto import (
     ProyectoCreate, Proyecto, ProyectoListResponse, ProyectoResponse,
-    ProyectoUpdate, PageUpdate        #  <-- importa los nuevos
+    ProyectoUpdate, PageUpdate, ColaboradorResponse, ColaboradoresResponse,
+    ColaboradorUpdate, ColaboradorUpdateResponse
 )
 from app.services.vision import components_from_image
 import copy
@@ -194,12 +195,28 @@ def actualizar_proyecto(
         if nuevo_valor is not None:
             setattr(proyecto, campo, nuevo_valor)
 
-    # 3. ─────────── procesar cada página recibida
+    # 3. ─────────── actualizar colaboradores si se proporcionan
+    if data.colaboradores is not None:
+        # Eliminar colaboradores existentes
+        db.query(ColaboradorProyecto).filter(
+            ColaboradorProyecto.proyecto_id == proyecto.id
+        ).delete()
+        
+        # Agregar nuevos colaboradores
+        for colaborador_id in data.colaboradores:
+            relacion = ColaboradorProyecto(
+                usuario_id=colaborador_id,
+                proyecto_id=proyecto.id,
+                permisos="ver"  # por defecto
+            )
+            db.add(relacion)
+
+    # 4. ─────────── procesar cada página recibida
     #    usamos un dicc para saber cuáles páginas ya estaban
     existentes = {p.id: p for p in proyecto.pages}
 
     for pagina_in in data.pages:
-        # 3.a ── UPDATE de página existente
+        # 4.a ── UPDATE de página existente
         if pagina_in.id:
             page_obj = existentes.get(pagina_in.id)
             if not page_obj:
@@ -207,7 +224,7 @@ def actualizar_proyecto(
                     400,
                     f"Página con id {pagina_in.id} no pertenece al proyecto",
                 )
-        # 3.b ── INSERT de una nueva página
+        # 4.b ── INSERT de una nueva página
         else:
             page_obj = Page(proyecto_id=proyecto.id)
             db.add(page_obj)
@@ -225,7 +242,7 @@ def actualizar_proyecto(
             if nuevo_valor is not None:
                 setattr(page_obj, campo, nuevo_valor)
 
-    # 4. ─────────── commit (esto disparará el `onupdate` y refrescará last_modified)
+    # 5. ─────────── commit (esto disparará el `onupdate` y refrescará last_modified)
     db.commit()
     db.refresh(proyecto)
 
@@ -287,7 +304,7 @@ async def crear_pagina_en_proyecto(
     return {"data": nueva_pagina}
 
 def slugify(text: str) -> str:
-    """‘Página X’ → 'pagina-x'  (ASCII, minúsculas, guiones)"""
+    """'Página X' → 'pagina-x'  (ASCII, minúsculas, guiones)"""
     text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
     text = re.sub(r"[^\w\s-]", "", text).strip().lower()
     return re.sub(r"[\s_]+", "-", text)
@@ -314,3 +331,100 @@ def descargar_proyecto_angular(
     return FileResponse(zip_path,
                         filename=f"frontend_flutter_{proj.id}.zip",
                         media_type="application/zip")
+
+@router.get("/{proyecto_id}/colaboradores", response_model=ColaboradoresResponse)
+def obtener_colaboradores_proyecto(
+    proyecto_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    # Verificar que el usuario tenga acceso al proyecto
+    proyecto = db.query(ProyectoModel).filter_by(id=proyecto_id).first()
+    if not proyecto:
+        raise HTTPException(404, "Proyecto no encontrado")
+
+    # Verificar que el usuario sea el propietario o un colaborador
+    if proyecto.owner_id != current_user.id:
+        es_colaborador = db.query(ColaboradorProyecto).filter_by(
+            proyecto_id=proyecto_id,
+            usuario_id=current_user.id
+        ).first()
+        if not es_colaborador:
+            raise HTTPException(403, "No tienes acceso a este proyecto")
+
+    # Obtener todos los colaboradores del proyecto
+    colaboradores = (
+        db.query(Usuario, ColaboradorProyecto.permisos)
+        .join(ColaboradorProyecto, ColaboradorProyecto.usuario_id == Usuario.id)
+        .filter(ColaboradorProyecto.proyecto_id == proyecto_id)
+        .all()
+    )
+
+    # Transformar los resultados al formato esperado
+    colaboradores_formateados = [
+        {
+            "id": c.Usuario.id,
+            "email": c.Usuario.email,
+            "name": c.Usuario.name,
+            "permisos": c.permisos
+        }
+        for c in colaboradores
+    ]
+
+    return {
+        "data": colaboradores_formateados,
+        "countData": len(colaboradores_formateados)
+    }
+
+@router.put("/colaboradores/{colaborador_id}", response_model=ColaboradorUpdateResponse)
+def actualizar_colaborador(
+    colaborador_id: int,
+    data: ColaboradorUpdate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    # Verificar que el usuario a actualizar existe
+    colaborador = db.query(Usuario).filter_by(id=colaborador_id).first()
+    if not colaborador:
+        raise HTTPException(404, "Colaborador no encontrado")
+
+    # Verificar que el usuario actual es administrador
+    if not current_user.is_main:
+        raise HTTPException(403, "No tienes permisos para actualizar colaboradores")
+
+    # Actualizar datos básicos del colaborador
+    if data.name is not None:
+        colaborador.name = data.name
+    if data.email is not None:
+        colaborador.email = data.email
+    if data.telefono is not None:
+        colaborador.telefono = data.telefono
+
+    # Actualizar proyectos si se proporcionan
+    if data.proyectos_ids is not None:
+        # Eliminar relaciones existentes
+        db.query(ColaboradorProyecto).filter_by(usuario_id=colaborador_id).delete()
+        
+        # Crear nuevas relaciones
+        for proyecto_id in data.proyectos_ids:
+            relacion = ColaboradorProyecto(
+                usuario_id=colaborador_id,
+                proyecto_id=proyecto_id,
+                permisos="ver"  # por defecto "ver"
+            )
+            db.add(relacion)
+
+    db.commit()
+    db.refresh(colaborador)
+
+    # Obtener los permisos actuales para la respuesta
+    permisos = db.query(ColaboradorProyecto.permisos).filter_by(usuario_id=colaborador_id).first()
+    
+    return {
+        "data": {
+            "id": colaborador.id,
+            "email": colaborador.email,
+            "name": colaborador.name,
+            "permisos": permisos.permisos if permisos else "ver"
+        }
+    }

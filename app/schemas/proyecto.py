@@ -96,6 +96,7 @@ class ProyectoUpdate(BaseModel):
     status: Optional[str]
     pages: List[PageUpdate]
     last_modified: datetime
+    colaboradores: Optional[List[int]] = None  # Lista de IDs de usuarios colaboradores
 
 class PageCreateIn(BaseModel):
     name: Optional[str]         = None
@@ -108,6 +109,35 @@ class PageCreateIn(BaseModel):
 
 class PageResponse(BaseModel):
     data: Page   # reutilizamos el Page que ya tienes
+
+    class Config:
+        from_attributes = True
+
+class ColaboradorResponse(BaseModel):
+    id: int
+    email: str
+    name: str
+    permisos: str
+
+    class Config:
+        from_attributes = True
+
+class ColaboradoresResponse(BaseModel):
+    data: List[ColaboradorResponse]
+    countData: int
+
+    class Config:
+        from_attributes = True
+
+class ColaboradorUpdate(BaseModel):
+    id: int
+    name: Optional[str] = None
+    email: Optional[str] = None
+    telefono: Optional[str] = None
+    proyectos_ids: Optional[List[int]] = None  # Lista de IDs de proyectos
+
+class ColaboradorUpdateResponse(BaseModel):
+    data: ColaboradorResponse
 
     class Config:
         from_attributes = True

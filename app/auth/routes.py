@@ -6,9 +6,11 @@ from app.auth.schemas import UserCreate, UserLogin, UserOut, Token, SubUserOut
 from app.auth.auth_utils import hash_password, verify_password, create_access_token
 from app.auth.dependencies import get_current_user
 from app.auth.schemas import SubUserCreate
-from app.schemas.auth import LoginRequest
-from app.models.models import Proyecto  # Asegúrate de importar esto
+from app.schemas.auth import LoginRequest, UserDetailResponse
+from app.models.models import Proyecto
 from typing import Dict
+from sqlalchemy import func
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 def get_db():
@@ -249,5 +251,82 @@ def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
                     "email": admin.email,
                     "name": admin.name
                 } if admin else None
+            }
+        }
+
+@router.get("/user-detail/{user_id}", response_model=UserDetailResponse)
+def get_user_detail(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    # Verificar que el usuario existe
+    user = db.query(Usuario).filter(Usuario.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    # Obtener proyectos según el rol
+    if user.is_main:
+        # Si es admin, obtener sus proyectos creados
+        proyectos = db.query(Proyecto).filter(Proyecto.owner_id == user.id).all()
+        proyectos_data = [
+            {
+                "id": p.id,
+                "name": p.name,
+                "descripcion": p.descripcion
+            }
+            for p in proyectos
+        ]
+        # Contar colaboradores
+        total_colaboradores = db.query(func.count(Usuario.id)).filter(
+            Usuario.parent_user_id == user.id
+        ).scalar()
+        
+        return {
+            "data": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "telefono": user.telefono,
+                "rol": "admin",
+                "total_colaboradores": total_colaboradores,
+                "proyectos": proyectos_data
+            }
+        }
+    else:
+        # Si es colaborador, obtener proyectos donde participa
+        proyectos = (
+            db.query(Proyecto)
+            .join(ColaboradorProyecto, ColaboradorProyecto.proyecto_id == Proyecto.id)
+            .filter(ColaboradorProyecto.usuario_id == user.id)
+            .all()
+        )
+        proyectos_data = [
+            {
+                "id": p.id,
+                "name": p.name,
+                "descripcion": p.descripcion
+            }
+            for p in proyectos
+        ]
+        
+        # Obtener información del admin
+        admin = db.query(Usuario).filter(Usuario.id == user.parent_user_id).first()
+        admin_data = {
+            "id": admin.id,
+            "email": admin.email,
+            "name": admin.name
+        } if admin else None
+        
+        return {
+            "data": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "telefono": user.telefono,
+                "rol": "colaborador",
+                "total_colaboradores": 0,  # Los colaboradores no tienen subusuarios
+                "proyectos": proyectos_data,
+                "admin": admin_data
             }
         }
