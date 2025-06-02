@@ -81,6 +81,18 @@ class TextAreaComponent(ComponentBase):
     placeholder: Optional[str] = None
     value: Optional[str] = None
 
+class IconComponent(ComponentBase):
+    type: Literal['icon']
+    icon: str
+    color: Optional[str] = "#000000"
+    size: Optional[int] = 24
+
+class DataTableComponent(ComponentBase):
+    type: Literal['datatable']
+    headers: list[str]
+    rows: list[list[str]]
+    backgroundColor: Optional[str] = "#ffffff"
+
 class ImagenComponent(ComponentBase):
     type: Literal['imagen']
     src: str  # URL o base64
@@ -98,7 +110,9 @@ ComponentJSON = Annotated[
         CalendarComponent,   
         SearchComponent,     
         TextAreaComponent,   
-        ImagenComponent 
+        ImagenComponent,
+        IconComponent,
+        DataTableComponent
     ],
     Field(discriminator='type')
 ]

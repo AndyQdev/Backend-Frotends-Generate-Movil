@@ -106,7 +106,16 @@ def render_component(comp: dict) -> dict:
         class_name = f"Calendar{comp['id']}"
         class_def = env.get_template('calendar.dart.j2').render(comp=comp, class_name=class_name)
         return {'class_def': class_def, 'call': f'{class_name}()'}
+    if t == 'icon':
+        class_name = f"Icon{comp['id']}"
+        class_def = env.get_template('icon.dart.j2').render(comp=comp, class_name=class_name)
+        return {'class_def': class_def, 'call': f'{class_name}()'}
 
+    if t == 'datatable':
+        class_name = f"DataTable{comp['id']}"
+        class_def = env.get_template('datatable.dart.j2').render(comp=comp, class_name=class_name)
+        return {'class_def': class_def, 'call': f'{class_name}()'}
+    
     if t == 'search':
         class_name = f"Search{comp['id']}"
         class_def = env.get_template('search.dart.j2').render(comp=comp, class_name=class_name)
@@ -117,7 +126,31 @@ def render_component(comp: dict) -> dict:
 # ---------- genera todos los files ----------
 def build_flutter_project(proj: dict) -> str:
     app_dir = scaffold_flutter_from_zip(f"project_{proj['id']}")
+    pubspec_path = os.path.join(app_dir, "flutter_template", "pubspec.yaml")
+    with open(pubspec_path, "r", encoding="utf8") as f:
+        lines = f.readlines()
 
+    # Buscar el índice donde empiezan las dependencias
+    for i, line in enumerate(lines):
+        if line.strip() == "dependencies:":
+            deps_index = i
+            break
+    else:
+        raise ValueError("No se encontró el bloque de dependencias en pubspec.yaml")
+
+    # Revisar si ya está agregada
+    if not any("lucide_icons:" in l for l in lines):
+        # Buscar el índice donde termina el bloque flutter: sdk: flutter
+        for j in range(deps_index + 1, len(lines)):
+            if lines[j].strip().startswith("sdk: flutter"):
+                # Insertar después de esa línea
+                lines.insert(j + 1, "  lucide_icons: ^0.257.0\n")
+                break
+
+    # Guardar el archivo modificado
+    with open(pubspec_path, "w", encoding="utf8") as f:
+        f.writelines(lines)
+        
     pages_dir = os.path.join(app_dir, "flutter_template", "lib", "pages")
     os.makedirs(pages_dir, exist_ok=True)
 
