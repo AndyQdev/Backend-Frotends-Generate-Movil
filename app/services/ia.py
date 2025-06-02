@@ -143,6 +143,38 @@ Ejemplo 11 (imagen):
     "borderRadius": 6
   }
 }
+Ejemplo 12 (datatable):
+{
+  "type": "datatable",
+  "x": 5,
+  "y": 30,
+  "width": 90,
+  "height": 20,
+  "headers": ["ID", "Nombre", "Descripción"],
+  "rows": [
+    ["1", "Ejemplo A", "Fila de prueba"],
+    ["2", "Ejemplo B", "Otra fila"],
+    ["3", "Ejemplo C", "Más datos"]
+  ],
+  "backgroundColor": "#f8fafc"
+}
+
+Ejemplo 13 (icon):
+{
+  "type": "icon",
+  "icon": "Airplay",
+  "color": "#2563eb",
+  "size": 60,
+  "x": 10,
+  "y": 10,
+  "width": 10,
+  "height": 10
+}
+
+⚠️ Sobre íconos:
+- El campo `"icon"` debe estar en formato **PascalCase**
+- El nombre debe coincidir con un ícono válido de la librería **lucide_icons: ^0.257.0** de Flutter
+- No uses nombres inventados ni en camelCase
 
 Si el usuario quiere MODIFICAR un componente existente:
 - Devuelve un objeto JSON con "action":"update",

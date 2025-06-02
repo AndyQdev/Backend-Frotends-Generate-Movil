@@ -1,0 +1,36 @@
+class {{ class_name }} extends StatelessWidget {
+  const {{ class_name }}({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Positioned(
+      left: screenWidth * {{ comp.x }} / 100,
+      top: screenHeight * {{ comp.y }} / 100,
+      child: Container(
+        width: screenWidth * {{ comp.width }} / 100,
+        height: screenHeight * {{ comp.height }} / 100,
+        color: const Color(0xFF{{ comp.backgroundColor[1:] }}),
+        child: DataTable(
+          headingRowColor: MaterialStateColor.resolveWith(
+            (states) => Colors.grey.shade200,
+          ),
+          columns: [
+            {% for header in comp.headers %}
+            DataColumn(label: Text('{{ header }}')),
+            {% endfor %}
+          ],
+          rows: [
+            {% for row in comp.rows %}
+            DataRow(cells: [
+              {% for cell in row %}DataCell(Text('{{ cell }}')),{% endfor %}
+            ]),
+            {% endfor %}
+          ],
+        ),
+      ),
+    );
+  }
+}
