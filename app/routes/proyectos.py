@@ -1,5 +1,5 @@
 import json
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Body
 from sqlalchemy.orm import Session
 from app.routes.utils.flutter_generator import build_flutter_project
 from app.schemas.proyecto import ProyectoCreate, Proyecto
@@ -251,11 +251,18 @@ def actualizar_proyecto(
 @router.post("/{project_id}/pages", response_model=PageResponse, status_code=201)
 async def crear_pagina_en_proyecto(
     project_id: int,
-    page_in: PageCreateIn = Depends(),
-    img: UploadFile | None = File(None),   
+    page_in: PageCreateIn = Body(...),
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
+    print("=== DATOS RECIBIDOS EN CREAR PÁGINA ===")
+    print("Project ID:", project_id)
+    print("Page Data (raw):", page_in)
+    print("Page Data (dict):", page_in.model_dump())
+    print("Name recibido:", page_in.name)
+    print("Usuario actual:", current_user.email)
+    print("=====================================")
+
     proyecto = (
         db.query(ProyectoModel)
           .filter(ProyectoModel.id == project_id)
@@ -264,36 +271,22 @@ async def crear_pagina_en_proyecto(
     if not proyecto:
         raise HTTPException(404, "Proyecto no encontrado")
 
-    res_w = proyecto.resolution_w or 390
-    res_h = proyecto.resolution_h or 844
     total_pages = db.query(func.count(Page.id))\
                     .filter(Page.proyecto_id == project_id).scalar()
     nuevo_order = (total_pages or 0) + 1
     nombre_def  = f"Página {nuevo_order}"
 
-    # ─── 1. componentes: vienen de JSON o de la imagen ──────────
-    componentes: list[dict] = page_in.components or []
+    # Asegurarnos de que el nombre se asigne correctamente
+    nombre_final = page_in.name if page_in.name and page_in.name.strip() else nombre_def
+    print("Nombre final asignado:", nombre_final)
 
-    if img:
-        print("Procesando imagen de boceto...")
-        img_bytes = await img.read()
-        comps_valid = components_from_image(
-            img_bytes,
-            img.content_type,
-            res_w,
-            res_h
-        )
-        print("Componentes extraídos de imagen:", comps_valid)
-        componentes.extend([c.model_dump(mode="json") for c in comps_valid])
-
-    print("Pagina!!: ", page_in)
     nueva_pagina = Page(
-        name             = page_in.name  or nombre_def,
+        name             = nombre_final,
         order            = page_in.order if page_in.order is not None else nuevo_order,
         background_color = page_in.background_color,
         grid_enabled     = page_in.grid_enabled,
         device_mode      = page_in.device_mode,
-        components       = componentes,
+        components       = page_in.components or [],
         proyecto_id      = project_id,
     )
 
@@ -301,7 +294,63 @@ async def crear_pagina_en_proyecto(
     proyecto.last_modified = datetime.utcnow()
     db.commit(); db.refresh(nueva_pagina)
 
+    print("Página creada exitosamente:", nueva_pagina.id)
     return {"data": nueva_pagina}
+
+@router.post("/{project_id}/pages/{page_id}/process-image", response_model=PageResponse)
+async def procesar_imagen_pagina(
+    project_id: int,
+    page_id: int,
+    img: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    print("=== PROCESANDO IMAGEN PARA PÁGINA ===")
+    print("Project ID:", project_id)
+    print("Page ID:", page_id)
+    print("Imagen recibida:", img.filename)
+    print("Usuario actual:", current_user.email)
+    print("=====================================")
+
+    # Verificar que el proyecto existe y pertenece al usuario
+    proyecto = db.query(ProyectoModel).filter(ProyectoModel.id == project_id).first()
+    if not proyecto:
+        raise HTTPException(404, "Proyecto no encontrado")
+    if proyecto.owner_id != current_user.id:
+        raise HTTPException(403, "No autorizado para modificar este proyecto")
+
+    # Buscar la página
+    pagina = db.query(Page).filter(
+        Page.id == page_id,
+        Page.proyecto_id == project_id
+    ).first()
+    if not pagina:
+        raise HTTPException(404, "Página no encontrada")
+
+    # Procesar la imagen
+    res_w = proyecto.resolution_w or 390
+    res_h = proyecto.resolution_h or 844
+    
+    print("Procesando imagen de boceto...")
+    img_bytes = await img.read()
+    comps_valid = components_from_image(
+        img_bytes,
+        img.content_type,
+        res_w,
+        res_h
+    )
+    print("Componentes extraídos de imagen:", comps_valid)
+    
+    # Actualizar los componentes de la página
+    componentes = [c.model_dump(mode="json") for c in comps_valid]
+    pagina.components = componentes
+    
+    proyecto.last_modified = datetime.utcnow()
+    db.commit()
+    db.refresh(pagina)
+
+    print("Imagen procesada exitosamente")
+    return {"data": pagina}
 
 def slugify(text: str) -> str:
     """'Página X' → 'pagina-x'  (ASCII, minúsculas, guiones)"""
@@ -428,3 +477,25 @@ def actualizar_colaborador(
             "permisos": permisos.permisos if permisos else "ver"
         }
     }
+
+@router.delete("/pages/{page_id}")
+def eliminar_pagina(
+    page_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    # Buscar la página y su proyecto asociado
+    pagina = db.query(Page).filter(Page.id == page_id).first()
+    if not pagina:
+        raise HTTPException(404, "Página no encontrada")
+
+    # Verificar que el usuario es el propietario del proyecto
+    if pagina.proyecto.owner_id != current_user.id:
+        raise HTTPException(403, "No autorizado para eliminar esta página")
+
+    # Eliminar la página
+    db.delete(pagina)
+    db.commit()
+
+    return {"message": "Página eliminada exitosamente"}
+
