@@ -1,0 +1,26 @@
+name: 🚀 Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🔓 Cargar clave SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SOFTWARESSH }}
+
+      - name: 📡 Conectarse al servidor y actualizar backend
+        run: |
+          ssh -o StrictHostKeyChecking=no root@24.199.104.57 "
+            cd /root/projects/backends/Backend-Frotends-Generate-Movil &&
+            git pull origin main &&
+            source env/bin/activate &&
+            pip install -r requirements.txt &&
+            pm2 restart backend-socket
+          "

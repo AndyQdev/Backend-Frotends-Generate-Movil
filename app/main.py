@@ -8,7 +8,10 @@ from socketio import ASGIApp
 
 app = FastAPI()
 
-origins = ["http://localhost:5173"]
+origins = [
+    "http://localhost:5173",  # desarrollo local
+    "https://generador-frontends.premiumshop.shop",  # dominio en producción
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
