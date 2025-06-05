@@ -38,7 +38,10 @@ async def user_can_access_project(user: Usuario, project_id: int) -> bool:
         return colaboracion is not None
 sio = socketio.AsyncServer(
     async_mode="asgi",
-    cors_allowed_origins=[],
+    cors_allowed_origins=[
+        "https://generador-frontends.premiumshop.shop",
+        "http://localhost:5173",  # si pruebas en local
+    ],
     ping_interval=25, ping_timeout=60
 )
 
