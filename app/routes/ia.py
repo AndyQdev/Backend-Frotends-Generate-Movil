@@ -7,44 +7,72 @@ from app.models.models import Page
 from app.services.ia import generate_component            # <-- ya importa ComponentJSON dentro
 from app.services.ia import generate_action
 from sqlalchemy.orm.attributes import flag_modified
-
+from fastapi import UploadFile, File, Form
+from tempfile import NamedTemporaryFile
+from dotenv import load_dotenv
+from openai import OpenAI
+import os
+load_dotenv()
 router = APIRouter(prefix="/ia", tags=["ia"])
 
 class IARequest(BaseModel):
     prompt: str
     page_id: int
 
-# @router.post("/component")
-# def crear_componente_con_ia(
-#     body: IARequest,
-#     db: Session = Depends(get_db),
-#     _user = Depends(get_current_user)
-# ):
-#     page = db.query(Page).filter_by(id=body.page_id).first()
-#     if not page:
-#         raise HTTPException(404, "Página no encontrada")
+print("✅ KEY LEÍDA DE OPENIA:", repr(os.getenv("OPENIA_API_KEY")))
+openai_key = os.getenv("OPENIA_API_KEY")
+client = OpenAI(api_key=openai_key) 
 
-#     # 1. GPT-4 → JSON validado
-#     try:
-#         comp = generate_component(body.prompt)
-#     except ValueError as e:
-#         raise HTTPException(422, str(e))
+@router.post("/from-audio")
+async def transcribir_audio(
+    file: UploadFile = File(...),
+    page_id: int = Form(...),
+    db: Session = Depends(get_db),
+    _user = Depends(get_current_user)
+):
+    page = db.query(Page).filter_by(id=page_id).first()
+    print("page_id:", page_id, "page:", page)
+    if not page:
+        raise HTTPException(404, "Página no encontrada")
 
-#     # 2. Asegúrate de que page.components sea lista
-#     if page.components is None:
-#         page.components = []
-#     comp_dict = comp.model_dump(mode="json")
+    try:
+        # Guardar audio temporalmente
+        with NamedTemporaryFile(delete=False, suffix=".m4a") as temp_audio:
+            temp_audio.write(await file.read())
+            temp_audio_path = temp_audio.name
 
-#     # 2️⃣ Reasignar generando nueva lista
-#     page.components = (page.components or []) + [comp_dict]
+        # Transcribir con Whisper
+        with open(temp_audio_path, "rb") as audio_file:
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file,
+                response_format="text"
+            )
 
-#     db.commit()
-#     db.refresh(page)
+        prompt = transcript.strip()
+        print("🎤 Transcripción:", prompt)
 
-#     return {
-#         "component": comp_dict,
-#         "page": page  # ahora incluirá el nuevo componente
-#     }
+        return {"from": "audio", "prompt": prompt, "page_id": page_id}
+
+    finally:
+        if os.path.exists(temp_audio_path):
+            os.remove(temp_audio_path)
+
+class HelpRequest(BaseModel):
+    question: str
+@router.post("/ia/help")
+async def ask_help(req: HelpRequest, user=Depends(get_current_user)):
+    messages = [
+        {"role": "system", "content": "Eres un asistente experto del constructor visual de interfaces móviles del sistema. Ayudas al usuario a entender cómo usar las funciones del sistema como crear botones, subir imágenes, generar componentes por IA, etc."},
+        {"role": "user", "content": req.question}
+    ]
+    response = client.ChatCompletion.create(
+        model="gpt-4",  # o gpt-4-turbo
+        messages=messages,
+        temperature=0.7,
+        max_tokens=500
+    )
+    return {"answer": response.choices[0].message["content"]}
 
 @router.post("/component")
 def ia_component(body: IARequest, db: Session = Depends(get_db), _u = Depends(get_current_user)):
@@ -110,3 +138,4 @@ def ia_component(body: IARequest, db: Session = Depends(get_db), _u = Depends(ge
             "components": target,
             "page": page
         }
+
