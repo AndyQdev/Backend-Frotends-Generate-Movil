@@ -23,6 +23,61 @@ print("✅ KEY LEÍDA DE OPENIA:", repr(os.getenv("OPENIA_API_KEY")))
 openai_key = os.getenv("OPENIA_API_KEY")
 client = OpenAI(api_key=openai_key) 
 
+class HelpRequest(BaseModel):
+    question: str
+
+@router.post("/help")
+async def ask_help(req: HelpRequest, user=Depends(get_current_user)):
+    messages = [
+        {"role": "system", "content": """
+            Eres un asistente experto dentro de una plataforma web colaborativa llamada UI Sketch. Tu función es ayudar al usuario a entender cómo usar las funcionalidades del sistema de forma clara y directa, sin tecnicismos innecesarios.
+
+            🧠 Sobre el sistema:
+            - Es una herramienta visual para construir interfaces móviles (como Figma), pero orientada a Flutter.
+            - Está desarrollada en React + TypeScript + Tailwind CSS y permite colaboración en tiempo real con sockets.
+            - El usuario trabaja por proyectos → páginas → componentes.
+            - Los componentes se colocan en un canvas como si fuera un celular.
+
+            🧩 Los componentes incluyen:
+            button, input, textarea, select, imagen, calendario, buscador, header, sidebar, datatable e icon.
+            Cada uno puede moverse, redimensionarse y personalizarse (color, estilo, texto, íconos, etc.).
+
+            🤖 Funcionalidades clave:
+            - El usuario puede crear componentes con descripciones en texto o voz gracias a una IA integrada.
+            - Los componentes se generan automáticamente en formato JSON y se aplican a la página.
+            - También puede exportar el proyecto como código Flutter.
+
+            👥 El sistema permite:
+            - Crear proyectos, páginas y colaboradores.
+            - Usar un chat lateral con IA para describir componentes.
+            - Ver cambios en tiempo real hechos por otros usuarios conectados.
+
+            🧾 Otras características:
+            - Autenticación y roles de usuario (docente, director, etc.).
+            - Gestión de colaboradores con formularios.
+            - Exportación y descarga del diseño generado.
+            - Uso de variables de entorno para URLs de API y sockets.
+
+            🎯 Tu objetivo como asistente es responder de forma breve, útil y práctica sobre cómo usar esta herramienta. Siempre enfócate en las funcionalidades reales del sistema y evita respuestas genéricas.
+
+            Ejemplos de preguntas comunes:
+            - ¿Cómo creo un botón personalizado?
+            - ¿Cómo uso la IA para generar un input?
+            - ¿Puedo colaborar con otra persona en tiempo real?
+            - ¿Cómo exporto el diseño a Flutter?
+        """},
+        {"role": "user", "content": req.question}
+    ]
+    response = client.chat.completions.create(
+        model="gpt-4o",          # o gpt-4-turbo
+        messages=messages,
+        temperature=0.7,
+        max_tokens=500
+    )
+
+    # 👇 acceso correcto al texto devuelto
+    return {"answer": response.choices[0].message.content}
+
 @router.post("/from-audio")
 async def transcribir_audio(
     file: UploadFile = File(...),
