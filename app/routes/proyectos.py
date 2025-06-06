@@ -80,7 +80,20 @@ def crear_proyecto(
     db.refresh(pagina_inicial)
 
     if colaboradorId:
+        print("="*50)
+        print("DEBUG - Creación de colaboradores:")
+        print(f"Tipo de colaboradorId: {type(colaboradorId)}")
+        print(f"Valor de colaboradorId: {colaboradorId}")
+        print(f"Proyecto ID: {nuevo_proyecto.id}")
+        print("="*50)
+        
+        # Verificar que el usuario existe antes de crear la relación
         for colaborador_id in colaboradorId:
+            usuario = db.query(Usuario).filter(Usuario.id == colaborador_id).first()
+            if not usuario:
+                print(f"ERROR: Usuario con ID {colaborador_id} no existe en la base de datos")
+                continue
+                
             relacion = ColaboradorProyecto(
                 usuario_id=colaborador_id,
                 proyecto_id=nuevo_proyecto.id,
@@ -197,6 +210,13 @@ def actualizar_proyecto(
 
     # 3. ─────────── actualizar colaboradores si se proporcionan
     if data.colaboradores is not None:
+        print("="*50)
+        print("DEBUG - Actualización de colaboradores:")
+        print(f"Tipo de colaboradores: {type(data.colaboradores)}")
+        print(f"Valor de colaboradores: {data.colaboradores}")
+        print(f"Proyecto ID: {proyecto.id}")
+        print("="*50)
+        
         # Eliminar colaboradores existentes
         db.query(ColaboradorProyecto).filter(
             ColaboradorProyecto.proyecto_id == proyecto.id
@@ -204,6 +224,11 @@ def actualizar_proyecto(
         
         # Agregar nuevos colaboradores
         for colaborador_id in data.colaboradores:
+            usuario = db.query(Usuario).filter(Usuario.id == colaborador_id).first()
+            if not usuario:
+                print(f"ERROR: Usuario con ID {colaborador_id} no existe en la base de datos")
+                continue
+                
             relacion = ColaboradorProyecto(
                 usuario_id=colaborador_id,
                 proyecto_id=proyecto.id,
