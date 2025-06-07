@@ -55,54 +55,63 @@ def crear_proyecto(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    nuevo_proyecto = ProyectoModel(
-        name=name,
-        descripcion=descripcion,
-        status="En proceso",
-        owner_id=current_user.id,
-        create_date=datetime.utcnow(),
-        resolution_w=resolution_w or 390,
-        resolution_h=resolution_h or 844,
-        pages=[]  # inicialmente vacío
-    )
-    db.add(nuevo_proyecto)
-    db.commit()
-    db.refresh(nuevo_proyecto)
-    
-    pagina_inicial = Page(
-        name="Página 1",
-        order=1,
-        proyecto_id=nuevo_proyecto.id,
-        components=[]  # JSON vacío
-    )
-    db.add(pagina_inicial)
-    db.commit()
-    db.refresh(pagina_inicial)
-
-    if colaboradorId:
-        print("="*50)
-        print("DEBUG - Creación de colaboradores:")
-        print(f"Tipo de colaboradorId: {type(colaboradorId)}")
-        print(f"Valor de colaboradorId: {colaboradorId}")
-        print(f"Proyecto ID: {nuevo_proyecto.id}")
-        print("="*50)
+    try:
+        nuevo_proyecto = ProyectoModel(
+            name=name,
+            descripcion=descripcion,
+            status="En proceso",
+            owner_id=current_user.id,
+            create_date=datetime.utcnow(),
+            resolution_w=resolution_w or 390,
+            resolution_h=resolution_h or 844,
+            pages=[]  # inicialmente vacío
+        )
+        db.add(nuevo_proyecto)
+        db.flush()  # Para obtener el ID del proyecto
         
-        # Verificar que el usuario existe antes de crear la relación
-        for colaborador_id in colaboradorId:
-            usuario = db.query(Usuario).filter(Usuario.id == colaborador_id).first()
-            if not usuario:
-                print(f"ERROR: Usuario con ID {colaborador_id} no existe en la base de datos")
-                continue
-                
-            relacion = ColaboradorProyecto(
-                usuario_id=colaborador_id,
-                proyecto_id=nuevo_proyecto.id,
-                permisos="ver"  # por defecto, luego puedes asignar permisos específicos
-            )
-            db.add(relacion)
-        db.commit()
+        pagina_inicial = Page(
+            name="Página 1",
+            order=1,
+            proyecto_id=nuevo_proyecto.id,
+            components=[]  # JSON vacío
+        )
+        db.add(pagina_inicial)
+        db.flush()
 
-    return nuevo_proyecto
+        if colaboradorId:
+            print("="*50)
+            print("DEBUG - Creación de colaboradores:")
+            print(f"Tipo de colaboradorId: {type(colaboradorId)}")
+            print(f"Valor de colaboradorId: {colaboradorId}")
+            print(f"Proyecto ID: {nuevo_proyecto.id}")
+            print("="*50)
+            
+            # Convertir el string de IDs a lista
+            colaboradores_ids = [int(id.strip()) for id in colaboradorId.split(',') if id.strip()]
+            print(f"IDs de colaboradores procesados: {colaboradores_ids}")
+            
+            # Verificar que el usuario existe antes de crear la relación
+            for colaborador_id in colaboradores_ids:
+                usuario = db.query(Usuario).filter(Usuario.id == colaborador_id).first()
+                if not usuario:
+                    print(f"ERROR: Usuario con ID {colaborador_id} no existe en la base de datos")
+                    raise HTTPException(400, f"Usuario con ID {colaborador_id} no existe en la base de datos")
+                    
+                relacion = ColaboradorProyecto(
+                    usuario_id=colaborador_id,
+                    proyecto_id=nuevo_proyecto.id,
+                    permisos="ver"  # por defecto, luego puedes asignar permisos específicos
+                )
+                db.add(relacion)
+
+        db.commit()
+        db.refresh(nuevo_proyecto)
+        return nuevo_proyecto
+
+    except Exception as e:
+        db.rollback()
+        print(f"Error al crear proyecto: {str(e)}")
+        raise HTTPException(500, f"Error al crear el proyecto: {str(e)}")
 
 @router.get("/", response_model=ProyectoListResponse)
 def listar_proyectos(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
@@ -523,4 +532,35 @@ def eliminar_pagina(
     db.commit()
 
     return {"message": "Página eliminada exitosamente"}
+
+@router.delete("/{proyecto_id}")
+def eliminar_proyecto(
+    proyecto_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    try:
+        # Buscar el proyecto
+        proyecto = db.query(ProyectoModel).filter(ProyectoModel.id == proyecto_id).first()
+        if not proyecto:
+            raise HTTPException(404, "Proyecto no encontrado")
+
+        # Verificar que el usuario es el propietario del proyecto
+        if proyecto.owner_id != current_user.id:
+            raise HTTPException(403, "No autorizado para eliminar este proyecto")
+
+        # Eliminar las relaciones con colaboradores primero
+        db.query(ColaboradorProyecto).filter(
+            ColaboradorProyecto.proyecto_id == proyecto_id
+        ).delete()
+
+        # Eliminar el proyecto (esto eliminará también las páginas por cascade)
+        db.delete(proyecto)
+        db.commit()
+
+        return {"message": "Proyecto eliminado exitosamente"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error al eliminar proyecto: {str(e)}")
+        raise HTTPException(500, f"Error al eliminar el proyecto: {str(e)}")
 
