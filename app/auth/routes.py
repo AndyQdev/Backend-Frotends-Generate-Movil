@@ -86,6 +86,7 @@ async def login(user_data: LoginRequest, db: Session = Depends(get_db)):
         "user": {
             "id": user.id,
             "email": user.email,
+            "name" : user.name,
             "rol": rol,
             "permisos": permisos,
             **relacion_extra
@@ -170,6 +171,7 @@ async def check_token_endpoint(
         return {
             "id": current_user.id,
             "email": current_user.email,
+            "name": current_user.name,
             "rol": rol,
             "permisos": permisos,
             "colaboradores": colaboradores_data
@@ -186,6 +188,7 @@ async def check_token_endpoint(
             "id": current_user.id,
             "email": current_user.email,
             "rol": rol,
+            "name": current_user.name,
             "permisos": permisos,
             "admin": admin_data
         }

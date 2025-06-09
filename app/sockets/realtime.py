@@ -240,3 +240,21 @@ async def leaveProject(sid, project_id: int):
         users_list = list(project_users[project_id].values())
         await sio.emit("usersInProject", users_list, room=f"project_{project_id}")
     await sio.leave_room(sid, f"project_{project_id}")
+
+@sio.event
+async def component_selected(sid, data):
+    # data = { project_id, page_id, component_id, user_id, user_name, origin }
+    room = f"project_{data['project_id']}"
+    await sio.emit('component_selected', data, room=room, skip_sid=sid)
+
+@sio.event
+async def page_created(sid, data):
+    # data = {"project_id": 5, "page": {...}}
+    room = f"project_{data['project_id']}"
+    await _relay(sid, "page_created", data)
+
+@sio.event
+async def page_deleted(sid, data):
+    # data = {"project_id": 5, "page_id": "123"}
+    room = f"project_{data['project_id']}"
+    await _relay(sid, "page_deleted", data)

@@ -208,8 +208,8 @@ def actualizar_proyecto(
     )
     if not proyecto:
         raise HTTPException(404, "Proyecto no encontrado")
-    if proyecto.owner_id != current_user.id:
-        raise HTTPException(403, "No autorizado")
+    # if proyecto.owner_id != current_user.id:
+    #     raise HTTPException(403, "No autorizado")
 
     # 2. ─────────── actualizar campos simples del proyecto
     for campo in ("name", "descripcion", "status", "last_modified"):
@@ -350,8 +350,8 @@ async def procesar_imagen_pagina(
     proyecto = db.query(ProyectoModel).filter(ProyectoModel.id == project_id).first()
     if not proyecto:
         raise HTTPException(404, "Proyecto no encontrado")
-    if proyecto.owner_id != current_user.id:
-        raise HTTPException(403, "No autorizado para modificar este proyecto")
+    # if proyecto.owner_id != current_user.id:
+    #     raise HTTPException(403, "No autorizado para modificar este proyecto")
 
     # Buscar la página
     pagina = db.query(Page).filter(
@@ -524,8 +524,8 @@ def eliminar_pagina(
         raise HTTPException(404, "Página no encontrada")
 
     # Verificar que el usuario es el propietario del proyecto
-    if pagina.proyecto.owner_id != current_user.id:
-        raise HTTPException(403, "No autorizado para eliminar esta página")
+    # if pagina.proyecto.owner_id != current_user.id:
+    #     raise HTTPException(403, "No autorizado para eliminar esta página")
 
     # Eliminar la página
     db.delete(pagina)
