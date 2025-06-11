@@ -1,7 +1,9 @@
 import json
-from fastapi import APIRouter, Depends, HTTPException, Path, Body
+# from fastapi import APIRouter, Depends, HTTPException, Path, Body
+from fastapi import APIRouter, Depends, HTTPException, Path, Body, Query
 from sqlalchemy.orm import Session
-from app.routes.utils.flutter_generator import build_flutter_project
+# from app.routes.utils.flutter_generator import build_flutter_project
+from app.routes.utils.flutter_generator import build_flutter_project, build_specific_files
 from app.schemas.proyecto import ProyectoCreate, Proyecto
 from app.models.models import Proyecto as ProyectoModel, Usuario, Page
 from app.database import SessionLocal
@@ -563,4 +565,58 @@ def eliminar_proyecto(
         db.rollback()
         print(f"Error al eliminar proyecto: {str(e)}")
         raise HTTPException(500, f"Error al eliminar el proyecto: {str(e)}")
+
+
+# desde aqui
+@router.get("/{project_id}/download-specific")
+def descargar_archivos_especificos(
+    project_id: int,
+    files: str = Query(..., description="Lista de archivos a descargar separados por coma. Ejemplos: 'main,page_131,page_132'"),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """
+    Descarga archivos específicos del proyecto Flutter.
+
+    Args:
+        project_id: ID del proyecto
+        files: Lista de archivos a descargar separados por coma. Opciones:
+            - 'main': Para descargar el archivo main.dart
+            - 'page_X': Para descargar una página por ID real (ej: 'page_131')
+    """
+    # Obtener el proyecto
+    proj = db.query(ProyectoModel).filter_by(id=project_id).first()
+    if not proj:
+        raise HTTPException(404, "Proyecto no encontrado")
+
+    # Validar y procesar archivos
+    file_types = [f.strip() for f in files.split(',')]
+    proj_dict = Proyecto.model_validate(proj).model_dump()
+    page_ids_validos = {p["id"] for p in proj_dict["pages"]}
+
+    final_file_types = []
+    for file_type in file_types:
+        if file_type == "main":
+            final_file_types.append("main")
+        elif file_type.startswith("page_"):
+            try:
+                page_id = int(file_type.split("_")[1])
+            except ValueError:
+                raise HTTPException(400, f"Formato inválido en archivo: {file_type}")
+            if page_id not in page_ids_validos:
+                raise HTTPException(404, f"La página {page_id} no existe en el proyecto")
+            final_file_types.append(file_type)
+        else:
+            raise HTTPException(400, f"Tipo de archivo inválido: {file_type}")
+
+    # Generar el zip con los archivos específicos
+    zip_path = build_specific_files(proj_dict, final_file_types)
+
+    # Generar nombre del archivo zip
+    files_str = '_'.join(final_file_types)
+    return FileResponse(
+        zip_path,
+        filename=f"flutter_files_{proj.id}_{files_str}.zip",
+        media_type="application/zip"
+    )
 

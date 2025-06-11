@@ -1,4 +1,4 @@
-import os, shutil, pathlib, tempfile, subprocess, json
+import os, shutil, pathlib, tempfile, subprocess, json, zipfile
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -177,3 +177,68 @@ def build_flutter_project(proj: dict) -> str:
     # Empaquetar
     zip_path = shutil.make_archive(app_dir, "zip", app_dir)
     return zip_path
+
+
+
+# desde aqui
+def build_specific_files(proj: dict, file_types: list) -> str:
+    """
+    Genera un archivo zip con los archivos específicos solicitados.
+    
+    Args:
+        proj: Diccionario con la información del proyecto
+        file_types: Lista de tipos de archivos a generar. Puede contener:
+            - 'main': Para generar el main.dart
+            - 'page_X': Para generar la página X (ej: 'page_1', 'page_2', etc)
+    
+    Returns:
+        str: Ruta al archivo zip generado
+    """
+    app_dir = scaffold_flutter_from_zip(f"project_{proj['id']}_specific")
+    pages_dir = os.path.join(app_dir, "flutter_template", "lib", "pages")
+    os.makedirs(pages_dir, exist_ok=True)
+
+    # Preparar rutas e imports solo para las páginas solicitadas
+    routes = []
+    imports = []
+    pages_to_generate = []
+
+    for file_type in file_types:
+        if file_type == 'main':
+            continue
+        elif file_type.startswith('page_'):
+            page_id = int(file_type.split('_')[1])
+            pages_to_generate.append(page_id)
+            routes.append(f"'/page-{page_id}': (context) => const Page{page_id}(),")
+            imports.append(f"import 'pages/page_{page_id}.dart';")
+
+    # Generar solo las páginas solicitadas
+    for page in proj["pages"]:
+        if page['id'] in pages_to_generate:
+            page_file = os.path.join(pages_dir, f"page_{page['id']}.dart")
+            with open(page_file, "w", encoding="utf8") as f:
+                f.write(render_page(page))
+
+    # Generar main.dart si fue solicitado
+    if 'main' in file_types:
+        main_tpl = env.get_template("main.dart.j2")
+        with open(os.path.join(app_dir, "flutter_template", "lib", "main.dart"), "w", encoding="utf8") as f:
+            f.write(main_tpl.render(
+                imports=imports,
+                routes=routes
+            ))
+
+    # Empaquetar
+    output_zip = os.path.join(tempfile.gettempdir(), f"specific_flutter_{proj['id']}.zip")
+    with zipfile.ZipFile(output_zip, "w", zipfile.ZIP_DEFLATED) as zipf:
+        if 'main' in file_types:
+            main_path = os.path.join(app_dir, "flutter_template", "lib", "main.dart")
+            zipf.write(main_path, arcname="main.dart")
+
+        for file_type in file_types:
+            if file_type.startswith("page_"):
+                page_id = int(file_type.split("_")[1])
+                page_path = os.path.join(app_dir, "flutter_template", "lib", "pages", f"page_{page_id}.dart")
+                if os.path.exists(page_path):
+                    zipf.write(page_path, arcname=f"page_{page_id}.dart")
+    return output_zip
