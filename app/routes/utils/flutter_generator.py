@@ -31,7 +31,7 @@ def render_page(page: dict) -> str:
     bottom_call = next((p["bottom"] for p in parts if "bottom" in p), None)
 
     tpl = env.get_template("page.dart.j2")
-    return tpl.render(
+    return f"// {page['name']}\n" + tpl.render(
         class_name = f"Page{page['id']}",
         bg_color   = page["background_color"][1:],   # sin #
         class_defs = class_defs,
@@ -222,11 +222,12 @@ def build_specific_files(proj: dict, file_types: list) -> str:
     # Generar main.dart si fue solicitado
     if 'main' in file_types:
         main_tpl = env.get_template("main.dart.j2")
+        main_content = f"// main.dart - {proj['name']}\n" + main_tpl.render(
+            imports=imports,
+            routes=routes
+        )
         with open(os.path.join(app_dir, "flutter_template", "lib", "main.dart"), "w", encoding="utf8") as f:
-            f.write(main_tpl.render(
-                imports=imports,
-                routes=routes
-            ))
+            f.write(main_content)
 
     # Empaquetar
     output_zip = os.path.join(tempfile.gettempdir(), f"specific_flutter_{proj['id']}.zip")
