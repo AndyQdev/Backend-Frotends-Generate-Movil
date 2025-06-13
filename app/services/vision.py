@@ -167,8 +167,7 @@ Tu salida debe ser SOLO un JSON con este formato:
 
 # vision_ids = [mid for mid in ids if any(k in mid.lower() for k in ("vision","vl","image"))]
 # pprint.pp(vision_ids[:30])
-def components_from_image(img_bytes: bytes, content_type: str,
-                          device_w: int, device_h: int) -> list[ComponentJSON]:
+def components_from_image(img_bytes: bytes, content_type: str, device_w: int, device_h: int) -> list[ComponentJSON]:
 
     b64 = base64.b64encode(img_bytes).decode()
     data_uri = f"data:{content_type};base64,{b64}"

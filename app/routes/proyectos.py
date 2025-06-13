@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Body, Query
 from sqlalchemy.orm import Session
 # from app.routes.utils.flutter_generator import build_flutter_project
 from app.routes.utils.flutter_generator import build_flutter_project, build_specific_files
-from app.schemas.proyecto import ProyectoCreate, Proyecto
+from app.schemas.proyecto import Component, ProyectoCreate, Proyecto
 from app.models.models import Proyecto as ProyectoModel, Usuario, Page
 from app.database import SessionLocal
 from app.auth.dependencies import get_current_user
@@ -29,13 +29,13 @@ from fastapi import UploadFile, File, Form
 from sqlalchemy import func
 import unicodedata
 import re
-import os
-import zipfile
-import shutil
 from jinja2 import Template
 from fastapi.responses import FileResponse
 from xml.etree.ElementTree import fromstring
-
+from pdf2image import convert_from_bytes
+from docx import Document
+from PIL import Image
+import io
 router = APIRouter(prefix="/projects", tags=["Proyectos"])
 ANGULAR_BASE = "angular_base"  # carpeta base con estructura angular vacía
 TEMP_DIR = "/mnt/data/generated_projects"
@@ -46,6 +46,33 @@ def get_db():
     finally:
         db.close()
 
+def extract_images_from_pdf_or_docx(file: UploadFile) -> List[Image.Image]:
+    ext = file.filename.lower().split(".")[-1]
+    content = file.file.read()  # leer una vez
+
+    if ext == "pdf":
+        return convert_from_bytes(content)
+
+    elif ext == "docx":
+        doc = Document(io.BytesIO(content))
+        images: List[Image.Image] = []
+
+        for rel in doc.part._rels.values():
+            if "image" in rel.target_ref:
+                img_bytes = rel.target_part.blob
+                try:
+                    img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+                    images.append(img)
+                except Exception as e:
+                    print(f"Error al procesar imagen en .docx: {e}")
+
+        if not images:
+            raise ValueError("No se encontraron imágenes en el documento .docx")
+
+        return images
+
+    else:
+        raise ValueError("Formato no soportado. Solo .pdf o .docx")
 
 @router.post("/", response_model=Proyecto)
 def crear_proyecto(
@@ -53,11 +80,14 @@ def crear_proyecto(
     descripcion: str = Form(...),
     resolution_w: Optional[int] = Form(None),
     resolution_h: Optional[int] = Form(None),
-    colaboradorId: Optional[str] = Form(None),  # Opción: lo recibimos como string tipo '12,13'
+    colaboradorId: Optional[str] = Form(None),
+    file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
+    print("=== DATOS RECIBIDOS EN CREAR PROYECTO ===", file)
     try:
+        # 1. Crear proyecto primero
         nuevo_proyecto = ProyectoModel(
             name=name,
             descripcion=descripcion,
@@ -66,28 +96,49 @@ def crear_proyecto(
             create_date=datetime.utcnow(),
             resolution_w=resolution_w or 390,
             resolution_h=resolution_h or 844,
-            pages=[]  # inicialmente vacío
+            pages=[]
         )
         db.add(nuevo_proyecto)
-        db.flush()  # Para obtener el ID del proyecto
-        
-        pagina_inicial = Page(
-            name="Página 1",
-            order=1,
-            proyecto_id=nuevo_proyecto.id,
-            components=[]  # JSON vacío
-        )
-        db.add(pagina_inicial)
-        db.flush()
+        db.flush()  # nuevo_proyecto.id listo
+
+        # 2. Si hay archivo, generar páginas desde IA
+        if file:
+            images = extract_images_from_pdf_or_docx(file)
+            images = list(reversed(images))
+            for i, img in enumerate(images):
+                buf = io.BytesIO()
+                img.save(buf, format="PNG")
+                buf.seek(0)
+                img_bytes = buf.read()
+                content_type = "image/png"
+
+                components = components_from_image(
+                    img_bytes,
+                    content_type,
+                    resolution_w or 390,
+                    resolution_h or 844
+                )
+
+                pagina = Page(
+                    name=f"Página {i+1}",
+                    order=i + 1,
+                    proyecto_id=nuevo_proyecto.id,
+                    components=[c.model_dump(mode="json") for c in components]
+                )
+                db.add(pagina)
+                db.flush()
+        else:
+            # 3. Si no hay archivo, crea una página vacía por defecto
+            pagina_inicial = Page(
+                name="Página 1",
+                order=1,
+                proyecto_id=nuevo_proyecto.id,
+                components=[]
+            )
+            db.add(pagina_inicial)
+            db.flush()
 
         if colaboradorId:
-            print("="*50)
-            print("DEBUG - Creación de colaboradores:")
-            print(f"Tipo de colaboradorId: {type(colaboradorId)}")
-            print(f"Valor de colaboradorId: {colaboradorId}")
-            print(f"Proyecto ID: {nuevo_proyecto.id}")
-            print("="*50)
-            
             # Convertir el string de IDs a lista
             colaboradores_ids = [int(id.strip()) for id in colaboradorId.split(',') if id.strip()]
             print(f"IDs de colaboradores procesados: {colaboradores_ids}")
