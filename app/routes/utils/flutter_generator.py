@@ -7,7 +7,7 @@ TEMPLATE_DIR = BASE_DIR / "templates"
 TEMPLATE_ZIP = BASE_DIR.parent.parent / "templates" / "flutter_template.zip"
 #                       ↑ sube 2 niveles hasta app/ luego templates/
 
-env = Environment(loader=FileSystemLoader(TEMPLATE_DIR), autoescape=False)
+env = Environment(loader=FileSystemLoader(TEMPLATE_DIR), autoescape=False, extensions=['jinja2.ext.do'],)
 print("Plantillas Jinja en :", TEMPLATE_DIR.resolve())
 print("Flutter template zip:", TEMPLATE_ZIP.resolve())
 def scaffold_flutter_from_zip(project_name: str) -> str:
@@ -23,6 +23,7 @@ def camel(name: str) -> str:
 # ---------- renderizado de una página ----------
 def render_page(page: dict) -> str:
     parts = [render_component(c) for c in page["components"]]
+    parts.sort(key=lambda p: p.get('z', 0))
     print("Pages:", page)
     print("Componentes:", parts)
     class_defs = "\n\n".join(p["class_def"] for p in parts if p["class_def"])
@@ -59,7 +60,7 @@ def render_component(comp: dict) -> dict:
         class_def  = env.get_template('header.dart.j2').render(
             comp=comp, class_name=class_name
         )
-        return {'class_def': class_def, 'call': f'{class_name}()'}
+        return {'class_def': class_def, 'call': f'{class_name}()', 'z': 100}
 
     if t == 'bottomNavigationBar':
         class_name = f"BottomNav{comp['id']}"
@@ -77,10 +78,17 @@ def render_component(comp: dict) -> dict:
         )
         return {'class_def': class_def, 'call': f'{class_name}()'}
     
+    # if t == 'checklist':
+    #     call = env.get_template('checklist.dart.j2').render(comp=comp)
+    #     return {'class_def': '', 'call': call}
     if t == 'checklist':
-        call = env.get_template('checklist.dart.j2').render(comp=comp)
-        return {'class_def': '', 'call': call}
+        class_name = f"Checklist{comp['id']}"
+        class_def  = env.get_template('checklist.dart.j2').render(
+            comp=comp, class_name=class_name
+        )
+        return {'class_def': class_def, 'call': f'{class_name}()'}
 
+    
     if t == 'radiobutton':
         call = env.get_template('radiobutton.dart.j2').render(comp=comp)
         return {'class_def': '', 'call': call}
@@ -120,7 +128,15 @@ def render_component(comp: dict) -> dict:
         class_name = f"Search{comp['id']}"
         class_def = env.get_template('search.dart.j2').render(comp=comp, class_name=class_name)
         return {'class_def': class_def, 'call': f'{class_name}()'}
-    
+    if t == 'login':
+        class_name = f"Login{comp['id']}"
+        class_def = env.get_template('login.dart.j2').render(comp=comp, class_name=class_name)
+        return {'class_def': class_def, 'call': f'{class_name}()'}
+    if t == 'formulario':
+        class_name = f"Formulario{comp['id']}"
+        class_def = env.get_template('formulario.dart.j2').render(comp=comp, class_name=class_name)
+        return {'class_def': class_def, 'call': f'{class_name}()'}
+
     return {'class_def': '', 'call': ''}
 
 # ---------- genera todos los files ----------
