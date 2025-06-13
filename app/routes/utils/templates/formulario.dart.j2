@@ -1,0 +1,127 @@
+class {{ class_name }} extends StatelessWidget {
+  const {{ class_name }}({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Positioned(
+      left: screenWidth * {{ comp.x }} / 100,
+      top: screenHeight * {{ comp.y }} / 100,
+      child: SizedBox(
+        width: screenWidth * {{ comp.width }} / 100,
+        height: screenHeight * {{ comp.height }} / 100,
+        child: Center(
+          child: Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular({{ comp.style.borderRadius }}),
+            ),
+            color: const Color(0xFF{{ comp.style.backgroundColor[1:] }}),
+            elevation: 12,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                {{ comp.style.padding.left }},
+                {{ comp.style.padding.top }},
+                {{ comp.style.padding.right }},
+                {{ comp.style.padding.bottom }}
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    '{{ comp.title.text }}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: {{ comp.title.style.textStyle.fontSize }},
+                      fontWeight: FontWeight.{{ comp.title.style.textStyle.fontWeight }},
+                      color: Color(0xFF{{ comp.title.style.textStyle.color[1:] }}),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  {% for field in comp.fields %}
+                    {% if field.type == 'input' %}
+                      TextField(
+                        decoration: InputDecoration(
+                          hintText: '{{ field.placeholder }}',
+                          filled: true,
+                          fillColor: const Color(0xFF{{ field.style.backgroundColor[1:] }}),
+                          contentPadding: const EdgeInsets.fromLTRB(
+                            {{ field.style.padding.left }},
+                            {{ field.style.padding.top }},
+                            {{ field.style.padding.right }},
+                            {{ field.style.padding.bottom }}
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular({{ field.style.borderRadius }}),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    {% elif field.type == 'select' %}
+                      DropdownButtonFormField<String>(
+                        value: '{{ field.options[0] }}',
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: const Color(0xFF{{ field.style.backgroundColor[1:] }}),
+                          contentPadding: const EdgeInsets.fromLTRB(
+                            {{ field.style.padding.left }},
+                            {{ field.style.padding.top }},
+                            {{ field.style.padding.right }},
+                            {{ field.style.padding.bottom }}
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular({{ field.style.borderRadius }}),
+                          ),
+                        ),
+                        items: [
+                          {% for opt in field.options %}
+                            DropdownMenuItem(
+                              value: '{{ opt }}',
+                              child: Text('{{ opt }}'),
+                            ),
+                          {% endfor %}
+                        ],
+                        onChanged: (value) {},
+                      ),
+                      const SizedBox(height: 12),
+                    {% endif %}
+                  {% endfor %}
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF{{ comp.button.style.backgroundColor[1:] }}),
+                        padding: const EdgeInsets.fromLTRB(
+                          {{ comp.button.style.padding.left }},
+                          {{ comp.button.style.padding.top }},
+                          {{ comp.button.style.padding.right }},
+                          {{ comp.button.style.padding.bottom }}
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular({{ comp.button.style.borderRadius }}),
+                        ),
+                      ),
+                      onPressed: () {},
+                      child: const Text(
+                        '{{ comp.button.label }}',
+                        style: TextStyle(
+                          fontSize: {{ comp.button.style.textStyle.fontSize }},
+                          fontWeight: FontWeight.{{ comp.button.style.textStyle.fontWeight }},
+                          color: Color(0xFF{{ comp.button.style.textStyle.color[1:] }}),
+                        ),
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
