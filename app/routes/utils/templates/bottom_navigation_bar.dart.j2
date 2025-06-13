@@ -31,7 +31,7 @@ class _{{ class_name }}State extends State<{{ class_name }}> {
       items: [
         {%- for it in comp.get("items", []) %}
         BottomNavigationBarItem(
-          icon: Icon(Icons.{{ it.icon|default("home") }}),
+          icon: Icon(LucideIcons.{{ it.icon|default("home")|lower }}),
           label: '{{ it.label|default("Item") }}',
         ),
         {%- endfor %}

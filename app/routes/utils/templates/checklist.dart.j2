@@ -1,22 +1,75 @@
-Positioned(
-  left: screenWidth * {{ comp.x }} / 100,
-  top: screenHeight * {{ comp.y }} / 100,
-  child: Container(
-    width: screenWidth * {{ comp.width }} / 100,
-    height: screenHeight * {{ comp.height }} / 100,
-    padding: const EdgeInsets.all(8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        {% for opt in comp.options %}
-        Row(
-          children: [
-            Checkbox(value: false, onChanged: (_) {}),
-            Text('{{ opt }}')
-          ],
+class {{ class_name }} extends StatefulWidget {
+  const {{ class_name }}({super.key});
+
+  @override
+  State<{{ class_name }}> createState() => _{{ class_name }}State();
+}
+
+class _{{ class_name }}State extends State<{{ class_name }}> {
+  // Crear un Map dinámico a partir de la lista de opciones
+  late Map<String, bool> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = {
+      {% for opt in comp.options %}
+      '{{ opt }}': false,
+      {% endfor %}
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Positioned(
+      left: screenWidth * {{ comp.x }} / 100,
+      top: screenHeight * {{ comp.y }} / 100,
+      child: Container(
+        width: screenWidth * {{ comp.width }} / 100,
+        height: screenHeight * {{ comp.height }} / 100,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF{{ comp.style.backgroundColor[1:] }}),
+          borderRadius: BorderRadius.circular({{ comp.style.borderRadius }}),
         ),
-        {% endfor %}
-      ],
-    ),
-  ),
-)
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              {% set seen = namespace(names=[]) %}
+              {% for opt in comp.options %}
+              {% set label = opt ~ ' ' ~ loop.index if opt in seen.names else opt %}
+              {% do seen.names.append(opt) %}
+              Row(
+                children: [
+                  Checkbox(
+                    value: _selected['{{ label }}'],
+                    onChanged: (val) {
+                      setState(() {
+                        _selected['{{ label }}'] = val!;
+                      });
+                    },
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  Expanded(
+                    child: Text(
+                      '{{ label }}',
+                      style: TextStyle(
+                        color: const Color(0xFF{{ comp.style.textStyle.color[1:] }}),
+                        fontSize: {{ comp.style.textStyle.fontSize }},
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              {% endfor %}
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

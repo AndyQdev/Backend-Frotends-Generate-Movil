@@ -66,6 +66,7 @@ class _{{ class_name }}State extends State<{{ class_name }}> {
           bottom : 0,
           child: _Sidebar{{ comp.id }}(
             select: {{ comp.sidebar.select or 0 }},
+            onClose: () => setState(() => _open = false),
           ),
         ),
       ],
@@ -79,9 +80,11 @@ class _{{ class_name }}State extends State<{{ class_name }}> {
 
 /// ──────── SIDEBAR embebido ────────
 class _Sidebar{{ comp.id }} extends StatelessWidget {
-  const _Sidebar{{ comp.id }}({ super.key, required this.select });
+  const _Sidebar{{ comp.id }}({ super.key, required this.select,
+  required this.onClose,  });
 
   final int select;
+  final VoidCallback onClose;
 
   //-- Map simple icono-FontAwesome → Material
   static const _icons = {
@@ -106,7 +109,7 @@ class _Sidebar{{ comp.id }} extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                Icon(_icons['{{ icon }}'] ?? Icons.star,
+                Icon(LucideIcons.{{ comp.sidebar.titleIcon|default('star')|lower}} ?? Icons.star,
                      color: const Color(0xFF{{ main }}), size: 22),
                 const SizedBox(width: 8),
                 Expanded(
@@ -117,7 +120,7 @@ class _Sidebar{{ comp.id }} extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  onPressed: Navigator.of(context).maybePop,
+                  onPressed: onClose,
                   icon: const Icon(Icons.close, size: 20),
                   color: const Color(0xFF{{ main }}),
                   splashRadius: 20,
@@ -134,8 +137,7 @@ class _Sidebar{{ comp.id }} extends StatelessWidget {
               children: [
                 {% for sec in comp.sidebar.sections %}
                 ListTile(
-                  leading: Icon(
-                    _icons['{{ sec.icon }}'] ?? Icons.circle,
+                  leading: Icon(LucideIcons.{{ sec.icon|default('star')|lower}} ?? Icons.circle,
                     size: 22,
                     color: select == {{ loop.index0 }}
                            ? const Color(0xFF{{ main }})
