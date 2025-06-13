@@ -1,0 +1,139 @@
+class {{ class_name }} extends StatelessWidget {
+  const {{ class_name }}({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    return Positioned(
+        left: screenWidth * {{ comp.x }} / 100,
+        top: screenHeight * {{ comp.y }} / 100,
+        child: SizedBox(
+            width: screenWidth * {{ comp.width }} / 100,
+            height: screenHeight * {{ comp.height }} / 100,
+            child: Center(
+            child: Card(
+                shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular({{ comp.card.style.borderRadius }}),
+                ),
+                color: const Color(0xFF{{ comp.card.style.backgroundColor[1:] }}),
+                elevation: 12,
+                child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    {{ comp.card.style.padding.left }},
+                    {{ comp.card.style.padding.top }},
+                    {{ comp.card.style.padding.right }},
+                    {{ comp.card.style.padding.bottom }}
+                ),
+                child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                    Text(
+                        '{{ comp.label.text }}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                        fontSize: {{ comp.label.style.textStyle.fontSize }},
+                        fontWeight: FontWeight.{{ comp.label.style.textStyle.fontWeight|capitalize }},
+                        color: Color(0xFF{{ comp.label.style.textStyle.color[1:] }}),
+                        ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                        'Introduzca su correo electrónico',
+                        style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF6B7280),
+                        ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                        decoration: InputDecoration(
+                        hintText: '{{ comp.inputs[0].placeholder }}',
+                        filled: true,
+                        fillColor: const Color(0xFF{{ comp.inputs[0].style.backgroundColor[1:] }}),
+                        contentPadding: const EdgeInsets.fromLTRB(
+                            {{ comp.inputs[0].style.padding.left }},
+                            {{ comp.inputs[0].style.padding.top }},
+                            {{ comp.inputs[0].style.padding.right }},
+                            {{ comp.inputs[0].style.padding.bottom }}
+                        ),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular({{ comp.inputs[0].style.borderRadius }}),
+                            borderSide: const BorderSide(
+                            color: Color(0xFFE5E7EB),
+                            ),
+                        ),
+                        ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                        'Introduzca su contraseña',
+                        style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF6B7280),
+                        ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                        obscureText: true,
+                        decoration: InputDecoration(
+                        hintText: '{{ comp.inputs[1].placeholder }}',
+                        filled: true,
+                        fillColor: const Color(0xFF{{ comp.inputs[1].style.backgroundColor[1:] }}),
+                        contentPadding: const EdgeInsets.fromLTRB(
+                            {{ comp.inputs[1].style.padding.left }},
+                            {{ comp.inputs[1].style.padding.top }},
+                            {{ comp.inputs[1].style.padding.right }},
+                            {{ comp.inputs[1].style.padding.bottom }}
+                        ),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular({{ comp.inputs[1].style.borderRadius }}),
+                            borderSide: const BorderSide(
+                            color: Color(0xFFE5E7EB),
+                            ),
+                        ),
+                        ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF{{ comp.button.style.backgroundColor[1:] }}),
+                            padding: const EdgeInsets.fromLTRB(
+                            {{ comp.button.style.padding.left }},
+                            {{ comp.button.style.padding.top }},
+                            {{ comp.button.style.padding.right }},
+                            {{ comp.button.style.padding.bottom }}
+                            ),
+                            shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular({{ comp.button.style.borderRadius }}),
+                            ),
+                        ),
+                        onPressed: () {
+                            {% if comp.button.route %}
+                            Navigator.pushNamed(context, '/page-{{ comp.button.route }}');
+                            {% else %}
+                            // Sin ruta definida
+                            {% endif %}
+                        },
+                        child: const Text(
+                            '{{ comp.button.label }}',
+                            style: TextStyle(
+                            fontSize: {{ comp.button.style.textStyle.fontSize }},
+                            fontWeight: FontWeight.{{ comp.button.style.textStyle.fontWeight|capitalize }},
+                            color: Color(0xFF{{ comp.button.style.textStyle.color[1:] }}),
+                            ),
+                        ),
+                        ),
+                    ),
+                    ],
+                ),
+                ),
+            ),
+            ),
+        ),
+    );
+  }
+}

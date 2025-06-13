@@ -120,7 +120,15 @@ def render_component(comp: dict) -> dict:
         class_name = f"Search{comp['id']}"
         class_def = env.get_template('search.dart.j2').render(comp=comp, class_name=class_name)
         return {'class_def': class_def, 'call': f'{class_name}()'}
-    
+    if t == 'login':
+        class_name = f"Login{comp['id']}"
+        class_def = env.get_template('login.dart.j2').render(comp=comp, class_name=class_name)
+        return {'class_def': class_def, 'call': f'{class_name}()'}
+    if t == 'formulario':
+        class_name = f"Formulario{comp['id']}"
+        class_def = env.get_template('formulario.dart.j2').render(comp=comp, class_name=class_name)
+        return {'class_def': class_def, 'call': f'{class_name}()'}
+
     return {'class_def': '', 'call': ''}
 
 # ---------- genera todos los files ----------

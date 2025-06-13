@@ -14,15 +14,7 @@ client = OpenAI(
     api_key= os.getenv("OPENROUTER_API_KEY"),
     base_url="https://openrouter.ai/api/v1"
 )
-# client = OpenAI(
-#     api_key=os.getenv("OPENROUTER_API_KEY"),
-#     base_url="https://openrouter.ai/api/v1",
-#     default_headers={
-#         "HTTP-Referer": "http://localhost:5173",
-#         "X-Title": "UI-Sketch Dev"
-#     }
-# )
-# ───────── SYSTEM PROMPT con pocos-ejemplos ─────────
+
 SYSTEM_PROMPT = """
 Eres un generador de componentes JSON para un UI Builder.
 Devuelve **solo** un objeto JSON y nada más.
@@ -170,6 +162,149 @@ Ejemplo 13 (icon):
   "width": 10,
   "height": 10
 }
+Ejemplo 14 (login): Componente compuesto que contiene una card, un título, dos inputs (email + contraseña) y un botón.
+{
+  "type": "login",
+  "x": 10,
+  "y": 20,
+  "width": 80,
+  "height": 40,
+  "card": {
+    "type": "card",
+    "title": "",
+    "content": "",
+    "x": 0,
+    "y": 0,
+    "width": 100,
+    "height": 100,
+    "style": {
+      "backgroundColor": "#ffffff",
+      "borderRadius": 12
+    }
+  },
+  "label": {
+    "type": "label",
+    "text": "Inicia sesión",
+    "x": 0,
+    "y": 0,
+    "width": 100,
+    "height": 10,
+    "style": {
+      "textStyle": {
+        "fontSize": 20,
+        "fontWeight": "bold",
+        "color": "#111827"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "type": "input",
+      "placeholder": "Email",
+      "inputType": "email",
+      "x": 0,
+      "y": 0,
+      "width": 100,
+      "height": 10
+    },
+    {
+      "type": "input",
+      "placeholder": "Contraseña",
+      "inputType": "password",
+      "x": 0,
+      "y": 0,
+      "width": 100,
+      "height": 10
+    }
+  ],
+  "button": {
+    "type": "button",
+    "label": "Ingresar",
+    "x": 0,
+    "y": 0,
+    "width": 100,
+    "height": 10,
+    "style": {
+      "backgroundColor": "#2563eb",
+      "borderRadius": 8,
+      "textStyle": {
+        "fontSize": 16,
+        "fontWeight": "bold",
+        "color": "#ffffff"
+      }
+    }
+  }
+}
+
+Ejemplo 15 (formulario): Componente compuesto que contiene un título (label), una lista de campos (inputs, selects, etc.) y un botón.
+{
+  "type": "formulario",
+  "x": 5,
+  "y": 15,
+  "width": 90,
+  "height": 60,
+  "title": {
+    "type": "label",
+    "text": "Formulario de contacto",
+    "x": 0,
+    "y": 0,
+    "width": 100,
+    "height": 10,
+    "style": {
+      "textStyle": {
+        "fontSize": 18,
+        "fontWeight": "bold",
+        "color": "#111827"
+      }
+    }
+  },
+  "fields": [
+    {
+      "type": "input",
+      "placeholder": "Nombre completo",
+      "inputType": "text",
+      "x": 0,
+      "y": 10,
+      "width": 100,
+      "height": 10
+    },
+    {
+      "type": "input",
+      "placeholder": "Correo electrónico",
+      "inputType": "email",
+      "x": 0,
+      "y": 20,
+      "width": 100,
+      "height": 10
+    },
+    {
+      "type": "select",
+      "label": "Motivo",
+      "options": ["Soporte", "Consulta", "Reclamo"],
+      "x": 0,
+      "y": 30,
+      "width": 100,
+      "height": 10
+    }
+  ],
+  "button": {
+    "type": "button",
+    "label": "Enviar",
+    "x": 0,
+    "y": 40,
+    "width": 100,
+    "height": 10,
+    "style": {
+      "backgroundColor": "#2563eb",
+      "borderRadius": 8,
+      "textStyle": {
+        "fontSize": 16,
+        "fontWeight": "bold",
+        "color": "#ffffff"
+      }
+    }
+  }
+}
 
 ⚠️ Sobre íconos:
 - El campo `"icon"` debe estar en formato **PascalCase**
@@ -190,6 +325,30 @@ REGLAS:
 - El objeto target DEBE tener SIEMPRE las claves "by" y "value".
 - Ejemplo correcto para buscar por id:
   "target": { "by":"id", "value":"633956234655844404" }
+
+PADDING:
+- Siempre que un componente tenga campo `"style"`, incluye también `"padding"`, especialmente para:
+  - button, input, textArea, select, search, calendar, card
+- El padding debe seguir esta estructura:
+
+  "padding": {
+    "top": <entero 4 a 12>,
+    "right": <entero 6 a 16>,
+    "bottom": <entero 4 a 12>,
+    "left": <entero 6 a 16>
+  }
+
+- No exageres: los valores deben mantenerse **moderados** para que el diseño se vea natural y legible en dispositivos móviles.
+- No repitas el mismo valor exacto en los 4 lados; usa pequeñas variaciones como top/bottom ligeramente menor que left/right.
+
+Ejemplo de padding recomendado:
+```json
+"padding": {
+  "top": 6,
+  "right": 12,
+  "bottom": 6,
+  "left": 10
+}
 
 NO devuelvas nada más que el JSON. No agregues explicaciones ni comentarios.
 
@@ -231,7 +390,7 @@ def default_style():
     return {
         "backgroundColor": "#ffffff",
         "borderRadius": 0,
-        "padding": {"top": 0, "right": 0, "bottom": 0, "left": 0},
+        "padding": {"top": 0, "right": 0, "bottom": 0, "left": 10},
         "textStyle": {"fontSize": 14, "fontWeight": "normal", "color": "#000000"}
     }
 
@@ -246,7 +405,7 @@ def ensure_style(component: dict) -> dict:
                 "top": component["style"].get("padding", {}).get("top", 0),
                 "right": component["style"].get("padding", {}).get("right", 0),
                 "bottom": component["style"].get("padding", {}).get("bottom", 0),
-                "left": component["style"].get("padding", {}).get("left", 0),
+                "left": component["style"].get("padding", {}).get("left", 10),
             },
             "textStyle": {
                 "fontSize": component["style"].get("textStyle", {}).get("fontSize", 14),

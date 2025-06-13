@@ -21,7 +21,6 @@ class ComponentStyle(BaseModel):
     padding:         Optional[Padding] = Padding()
     textStyle:       Optional[TextStyle] | None = None
     # TODO: margin, boxShadow, etc.
-
 # ────────── base genérico ───────────
 class ComponentBase(BaseModel):
     id:    str = Field(default_factory=lambda: str(uuid4().int >> 64))
@@ -40,7 +39,12 @@ class ButtonComponent(ComponentBase):
 class InputComponent(ComponentBase):
     type: Literal['input']
     placeholder: str
-    inputType: Literal['text', 'email', 'password'] = 'text'
+    inputType: str = 'text'  # Permite cualquier string inicialmente
+
+    @property
+    def safe_input_type(self) -> str:
+        allowed = {'text', 'email', 'password'}
+        return self.inputType if self.inputType in allowed else 'text'
 
 class SelectComponent(ComponentBase):
     type: Literal['select']
@@ -96,6 +100,28 @@ class DataTableComponent(ComponentBase):
 class ImagenComponent(ComponentBase):
     type: Literal['imagen']
     src: str  # URL o base64
+
+class LoginComponent(ComponentBase):
+    type: Literal['login']
+    card: CardComponent
+    label: LabelComponent
+    inputs: list[InputComponent]  # longitud 2, uno email y uno password
+    button: ButtonComponent
+
+class FormularioComponent(ComponentBase):
+    type: Literal['formulario']
+    title: LabelComponent
+    fields: list[Union[
+        InputComponent,
+        SelectComponent,
+        LabelComponent,
+        CheckListComponent,
+        RadioButtonComponent,
+        TextAreaComponent,
+        CalendarComponent,
+    ]]
+    button: ButtonComponent
+
 # ───────── unión discriminada ─────────
 # ➊ Con Pydantic v2 usamos el discriminador
 ComponentJSON = Annotated[
@@ -112,7 +138,9 @@ ComponentJSON = Annotated[
         TextAreaComponent,   
         ImagenComponent,
         IconComponent,
-        DataTableComponent
+        DataTableComponent,
+        LoginComponent,
+        FormularioComponent,
     ],
     Field(discriminator='type')
 ]

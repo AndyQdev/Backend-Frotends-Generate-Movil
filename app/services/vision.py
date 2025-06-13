@@ -43,6 +43,10 @@ Tu salida debe ser SOLO un JSON con este formato:
    • imagen         – imagen decorativa/ilustrativa.  
    • label          – texto estático.  
    • card           – contenedor con fondo y borde redondeado.
+   • datatable      – tabla con cabecera (encabezados y filas).  
+   • icon           – ícono individual representando una acción o imagen decorativa.  
+   • login          – bloque compuesto que incluye tarjeta (card), título (label), dos campos de entrada (email y contraseña) y un botón.
+
 
 3. **Coordenadas**
    x, y, width, height → porcentajes enteros (0-100) respecto a {h}px alto × {w}px ancho
@@ -77,6 +81,15 @@ Tu salida debe ser SOLO un JSON con este formato:
        ["https://wallpapers.com/images/high/cool-neon-green-profile-picture-uvhf8r1q7ekwuzwu.webp",
         "https://wallpapers.com/images/featured-full/imagenes-de-perfil-geniales-4co57dtwk64fb7lv.jpg",
         "https://wallpapers.com/images/high/cool-profile-picture-purple-astronaut-mm73otj7x18b5r7m.webp"]
+       · datatable → "headers" (lista de columnas) y "rows" (matriz de celdas)  
+   · icon → "icon" (en PascalCase), "color", "size"  
+     ⚠️ Usa íconos válidos de la librería **lucide_icons: ^0.257.0**  
+   · login → bloque compuesto. Incluye las propiedades:  
+     - card: {type: 'card', ...}  
+     - label: {type: 'label', ...}  
+     - inputs: [input (email), input (password)]  
+     - button: {type: 'button', ...}  
+     Este bloque debe representarse como un único objeto `{"type": "login", ...}`.
 
 7. **Ejemplo de salida válido**
 {
@@ -116,6 +129,34 @@ Tu salida debe ser SOLO un JSON con este formato:
       "label": "Enviar",
       "x": 10, "y": 60, "width": 80, "height": 8,
       "style": { … }
+    },
+    {
+      "type": "datatable",
+      "headers": ["ID", "Nombre", "Rol"],
+      "rows": [
+        ["1", "Ana", "Admin"],
+        ["2", "Luis", "Usuario"]
+      ],
+      "x": 10, "y": 30, "width": 80, "height": 18,
+      "backgroundColor": "#f8fafc"
+    },
+    {
+      "type": "icon",
+      "icon": "UserCircle",
+      "color": "#2563eb",
+      "size": 48,
+      "x": 10, "y": 50, "width": 10, "height": 10
+    },
+    {
+      "type": "login",
+      "x": 10, "y": 60, "width": 80, "height": 40,
+      "card": { "type": "card", "title": "", "content": "", "x": 0, "y": 0, "width": 100, "height": 100, "style": { "backgroundColor": "#ffffff", "borderRadius": 12 } },
+      "label": { "type": "label", "text": "Inicia sesión", "x": 0, "y": 0, "width": 100, "height": 10, "style": { "textStyle": { "fontSize": 20, "fontWeight": "bold", "color": "#111827" } } },
+      "inputs": [
+        { "type": "input", "placeholder": "Email", "inputType": "email", "x": 0, "y": 0, "width": 100, "height": 10 },
+        { "type": "input", "placeholder": "Contraseña", "inputType": "password", "x": 0, "y": 0, "width": 100, "height": 10 }
+      ],
+      "button": { "type": "button", "label": "Ingresar", "x": 0, "y": 0, "width": 100, "height": 10, "style": { "backgroundColor": "#2563eb", "borderRadius": 8, "textStyle": { "fontSize": 16, "fontWeight": "bold", "color": "#ffffff" } } }
     }
   ]
 }
